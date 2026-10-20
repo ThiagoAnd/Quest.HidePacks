@@ -55,37 +55,21 @@ namespace {
         return (count + slots - 1) / slots;
     }
 
-    void Dump(char const* when) {
-        auto c = control->anchoredPosition;
-        auto cs = control->sizeDelta;
-        auto lp = control->localPosition;
-        auto v = viewport->anchoredPosition;
-        auto vs = viewport->sizeDelta;
-        auto b = bar->rect;
-        auto bp = bar->pivot;
-        Logger.info(
-            "{} control anchored {} {} size {} {} local {} {} anchors {} {} {} {} pivot {} {} | viewport anchored {} {} size {} {} | bar rect {} {} {} {} pivot {} {} scale {}",
-            when, c.x, c.y, cs.x, cs.y, lp.x, lp.y, control->anchorMin.x, control->anchorMin.y, control->anchorMax.x,
-            control->anchorMax.y, control->pivot.x, control->pivot.y, v.x, v.y, vs.x, vs.y, b.x, b.y, b.width, b.height,
-            bp.x, bp.y, bar->lossyScale.x
-        );
-    }
-
     void Apply() {
-        Dump("before");
         auto iconControl = control->GetComponent<HMUI::IconSegmentedControl*>();
         UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(control.ptr());
         auto first = iconControl->_cells->get_Item(0)->GetComponent<UnityEngine::RectTransform*>();
-        float current = BarPoint(first, 1).x;
-        float target = originX - page * slots * pitch;
-        auto shift = bar->TransformVector({target - current, 0.0f, 0.0f});
+        ArrayW<UnityEngine::Vector3> corners(4);
+        first->GetWorldCorners(corners);
+        float current = viewport->InverseTransformPoint(corners[1]).x;
+        float target = -page * slots * pitch;
+        auto shift = viewport->TransformVector({target - current, 0.0f, 0.0f});
         auto position = control->position;
         control->position = {position.x + shift.x, position.y + shift.y, position.z + shift.z};
 
-        Dump("after");
         leftArrow->SetActive(page > 0);
         rightArrow->SetActive(page < PageCount() - 1);
-        Logger.info("Tabs {} page {} of {} first cell was at {} slots from target", count, page + 1, PageCount(), (current - target) / pitch);
+        Logger.info("Tabs {} page {} of {} first cell was {} slots from target", count, page + 1, PageCount(), (current - target) / pitch);
     }
 
     void Next() {
@@ -157,16 +141,24 @@ namespace {
         control = controlRect;
 
         float arrowHeight = height * 0.6f;
+        auto arrowParent = viewport->parent;
+        auto place = [&](UnityEngine::RectTransform* arrow, float column) {
+            arrow->SetParent(arrowParent, false);
+            arrow->anchorMin = {0.0f, 1.0f};
+            arrow->anchorMax = {0.0f, 1.0f};
+            arrow->pivot = {0.0f, 1.0f};
+            arrow->sizeDelta = {pitch, arrowHeight};
+            auto at = viewport->anchoredPosition;
+            arrow->anchoredPosition = {at.x + column * pitch, at.y - height};
+        };
         if (!leftArrow) {
             auto left = MakeArrow("<", [] { Previous(); });
-            left->sizeDelta = {pitch, arrowHeight};
-            left->anchoredPosition = {originX, top - height};
+            place(left, 0.0f);
             leftArrow = left->gameObject;
         }
         if (!rightArrow) {
             auto right = MakeArrow(">", [] { Next(); });
-            right->sizeDelta = {pitch, arrowHeight};
-            right->anchoredPosition = {originX + (slots - 1) * pitch, top - height};
+            place(right, slots - 1);
             rightArrow = right->gameObject;
         }
         page = std::min(page, PageCount() - 1);

@@ -1,0 +1,1 @@
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" "${GIT_VERSION}")

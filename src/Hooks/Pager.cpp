@@ -10,6 +10,7 @@
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Rect.hpp"
 #include "UnityEngine/RectTransform.hpp"
+#include "UnityEngine/UI/LayoutRebuilder.hpp"
 #include "UnityEngine/UI/RectMask2D.hpp"
 #include "UnityEngine/Vector3.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
@@ -106,12 +107,16 @@ namespace {
             return;
         }
         bar = barRect;
+        UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(controlRect);
         auto first = iconControl->_cells->get_Item(0)->GetComponent<UnityEngine::RectTransform*>();
         auto second = iconControl->_cells->get_Item(1)->GetComponent<UnityEngine::RectTransform*>();
         auto firstLeft = BarPoint(first, 1);
         auto secondLeft = BarPoint(second, 1);
         auto firstBottom = BarPoint(first, 0);
         pitch = secondLeft.x - firstLeft.x;
+        if (pitch <= 0.0f) {
+            pitch = BarPoint(first, 2).x - firstLeft.x;
+        }
         originX = firstLeft.x;
         top = firstLeft.y;
         height = firstLeft.y - firstBottom.y;

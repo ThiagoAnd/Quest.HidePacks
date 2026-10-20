@@ -74,6 +74,13 @@ namespace {
         leftArrow->SetActive(hasLeft);
         rightArrow->SetActive(hasRight);
         Logger.info("Tabs {} offset {} visible {} left {} right {}", count, offset, visible, hasLeft, hasRight);
+        auto iconControl = control->GetComponent<HMUI::IconSegmentedControl*>();
+        for (int i = 0; i < count; i++) {
+            auto cell = iconControl->_cells->get_Item(i)->GetComponent<UnityEngine::RectTransform*>();
+            Logger.info("Cell {} at slot {}", i, (BarPoint(cell, 1).x - originX) / pitch);
+        }
+        Logger.info("Viewport at slot {} width {} slots, ours start {}", (BarPoint(viewport.ptr(), 1).x - originX) / pitch, viewport->rect.width / pitch, start);
+        Logger.info("Arrows left {} right {}", (BarPoint(leftArrow->GetComponent<UnityEngine::RectTransform*>(), 1).x - originX) / pitch, (BarPoint(rightArrow->GetComponent<UnityEngine::RectTransform*>(), 1).x - originX) / pitch);
     }
 
     int MaxOffset() {

@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
+#include "HMUI/CurvedTextMeshPro.hpp"
 #include "HMUI/IconSegmentedControl.hpp"
 #include "HMUI/IconSegmentedControlCell.hpp"
 #include "UnityEngine/GameObject.hpp"
@@ -26,6 +27,7 @@ namespace {
     UnityW<UnityEngine::RectTransform> control;
     UnityW<UnityEngine::GameObject> leftArrow;
     UnityW<UnityEngine::GameObject> rightArrow;
+    UnityW<HMUI::CurvedTextMeshPro> indicator;
     float pitch = 0.0f;
     float originX = 0.0f;
     float top = 0.0f;
@@ -41,7 +43,7 @@ namespace {
     }
 
     UnityEngine::RectTransform* MakeArrow(char const* text, std::function<void()> onClick) {
-        auto label = BSML::Lite::CreateClickableText(bar.ptr(), text, 6.0f, {0, 0}, {pitch, height}, std::move(onClick));
+        auto label = BSML::Lite::CreateClickableText(bar.ptr(), text, 3.5f, {0, 0}, {pitch, height}, std::move(onClick));
         label->set_alignment(TMPro::TextAlignmentOptions::Center);
         auto rect = label->GetComponent<UnityEngine::RectTransform*>();
         rect->anchorMin = {0.0f, 1.0f};
@@ -67,6 +69,7 @@ namespace {
         auto position = control->position;
         control->position = {position.x + shift.x, position.y + shift.y, position.z + shift.z};
 
+        indicator->set_text(std::to_string(page + 1) + "/" + std::to_string(PageCount()));
         leftArrow->SetActive(page > 0);
         rightArrow->SetActive(page < PageCount() - 1);
         Logger.info("Tabs {} page {} of {} first cell was {} slots from target", count, page + 1, PageCount(), (current - target) / pitch);
@@ -142,24 +145,30 @@ namespace {
 
         float arrowHeight = height * 0.6f;
         auto arrowParent = viewport->parent;
-        auto place = [&](UnityEngine::RectTransform* arrow, float column) {
-            arrow->SetParent(arrowParent, false);
-            arrow->anchorMin = {0.0f, 1.0f};
-            arrow->anchorMax = {0.0f, 1.0f};
-            arrow->pivot = {0.0f, 1.0f};
-            arrow->sizeDelta = {pitch, arrowHeight};
+        auto place = [&](UnityEngine::RectTransform* item, float column, float width) {
+            item->SetParent(arrowParent, false);
+            item->anchorMin = {0.0f, 1.0f};
+            item->anchorMax = {0.0f, 1.0f};
+            item->pivot = {0.0f, 1.0f};
+            item->sizeDelta = {width * pitch, arrowHeight};
             auto at = viewport->anchoredPosition;
-            arrow->anchoredPosition = {at.x + column * pitch, at.y - height};
+            item->anchoredPosition = {at.x + column * pitch, at.y - height};
         };
+        float buttonWidth = 1.5f;
         if (!leftArrow) {
-            auto left = MakeArrow("<", [] { Previous(); });
-            place(left, 0.0f);
+            auto left = MakeArrow("Back", [] { Previous(); });
+            place(left, 0.0f, buttonWidth);
             leftArrow = left->gameObject;
         }
         if (!rightArrow) {
-            auto right = MakeArrow(">", [] { Next(); });
-            place(right, slots - 1);
+            auto right = MakeArrow("Next", [] { Next(); });
+            place(right, slots - buttonWidth, buttonWidth);
             rightArrow = right->gameObject;
+        }
+        if (!indicator) {
+            indicator = BSML::Lite::CreateText(bar.ptr(), "", 3.5f, {0, 0}, {pitch, height});
+            indicator->set_alignment(TMPro::TextAlignmentOptions::Center);
+            place(indicator->GetComponent<UnityEngine::RectTransform*>(), buttonWidth, slots - 2 * buttonWidth);
         }
         page = std::min(page, PageCount() - 1);
         Apply();

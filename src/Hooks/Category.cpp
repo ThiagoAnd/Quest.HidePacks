@@ -16,7 +16,7 @@ namespace {
     using Category = SelectLevelCategoryViewController::LevelCategory;
     using Info = SelectLevelCategoryViewController::LevelCategoryInfo;
 
-    constexpr int Wanted = 2;
+    constexpr int Wanted = 11;
     std::vector<int> ours;
 
     int FindFreeValue(ArrayW<Info*> infos) {

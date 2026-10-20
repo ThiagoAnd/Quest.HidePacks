@@ -26,14 +26,13 @@ namespace {
     UnityW<UnityEngine::RectTransform> control;
     UnityW<UnityEngine::GameObject> leftArrow;
     UnityW<UnityEngine::GameObject> rightArrow;
-    UnityEngine::Vector3 baseWorld;
     float pitch = 0.0f;
     float originX = 0.0f;
     float top = 0.0f;
     float height = 0.0f;
     int slots = 0;
     int count = 0;
-    int offset = 0;
+    int page = 0;
 
     UnityEngine::Vector3 BarPoint(UnityEngine::RectTransform* rect, int corner) {
         ArrayW<UnityEngine::Vector3> corners(4);
@@ -52,53 +51,32 @@ namespace {
         return rect;
     }
 
-    void Apply() {
-        bool hasLeft = offset > 0;
-        int visible = slots - (hasLeft ? 1 : 0);
-        bool hasRight = offset + visible < count;
-        if (hasRight) {
-            visible -= 1;
-        }
-        int start = hasLeft ? 1 : 0;
-
-        auto world = bar->TransformPoint({originX + start * pitch, top, 0.0f});
-        viewport->position = world;
-        auto size = viewport->parent.cast<UnityEngine::RectTransform>()->InverseTransformVector(
-            bar->TransformVector({visible * pitch, height, 0.0f})
-        );
-        viewport->sizeDelta = {std::abs(size.x), std::abs(size.y)};
-
-        auto shift = bar->TransformVector({(start - offset) * pitch, 0.0f, 0.0f});
-        control->position = {baseWorld.x + shift.x, baseWorld.y + shift.y, baseWorld.z + shift.z};
-
-        leftArrow->SetActive(hasLeft);
-        rightArrow->SetActive(hasRight);
-        Logger.info("Tabs {} offset {} visible {} left {} right {}", count, offset, visible, hasLeft, hasRight);
-        auto iconControl = control->GetComponent<HMUI::IconSegmentedControl*>();
-        for (int i = 0; i < count; i++) {
-            auto cell = iconControl->_cells->get_Item(i)->GetComponent<UnityEngine::RectTransform*>();
-            Logger.info("Cell {} at slot {}", i, (BarPoint(cell, 1).x - originX) / pitch);
-        }
-        Logger.info("Viewport at slot {} width {} slots, ours start {}", (BarPoint(viewport.ptr(), 1).x - originX) / pitch, viewport->rect.width / pitch, start);
-        Logger.info("Arrows left {} right {}", (BarPoint(leftArrow->GetComponent<UnityEngine::RectTransform*>(), 1).x - originX) / pitch, (BarPoint(rightArrow->GetComponent<UnityEngine::RectTransform*>(), 1).x - originX) / pitch);
+    int PageCount() {
+        return (count + slots - 1) / slots;
     }
 
-    int MaxOffset() {
-        return std::max(0, count - (slots - 1));
+    void Apply() {
+        auto iconControl = control->GetComponent<HMUI::IconSegmentedControl*>();
+        UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(control.ptr());
+        auto first = iconControl->_cells->get_Item(0)->GetComponent<UnityEngine::RectTransform*>();
+        float current = BarPoint(first, 1).x;
+        float target = originX - page * slots * pitch;
+        auto shift = bar->TransformVector({target - current, 0.0f, 0.0f});
+        auto position = control->position;
+        control->position = {position.x + shift.x, position.y + shift.y, position.z + shift.z};
+
+        leftArrow->SetActive(page > 0);
+        rightArrow->SetActive(page < PageCount() - 1);
+        Logger.info("Tabs {} page {} of {} first cell was at {} slots from target", count, page + 1, PageCount(), (current - target) / pitch);
     }
 
     void Next() {
-        bool hasLeft = offset > 0;
-        int visible = slots - (hasLeft ? 1 : 0);
-        if (offset + visible < count) {
-            visible -= 1;
-        }
-        offset = std::min(offset + visible, MaxOffset());
+        page = std::min(page + 1, PageCount() - 1);
         Apply();
     }
 
     void Previous() {
-        offset = std::max(0, offset - (slots - 1));
+        page = std::max(page - 1, 0);
         Apply();
     }
 
@@ -145,29 +123,35 @@ namespace {
             rect->anchorMin = {0.0f, 1.0f};
             rect->anchorMax = {0.0f, 1.0f};
             rect->pivot = {0.0f, 1.0f};
+            rect->position = bar->TransformPoint({originX, top, 0.0f});
+            auto size = rect->parent.cast<UnityEngine::RectTransform>()->InverseTransformVector(
+                bar->TransformVector({slots * pitch, height, 0.0f})
+            );
+            rect->sizeDelta = {std::abs(size.x), std::abs(size.y)};
             viewport = rect;
-            baseWorld = controlRect->position;
-            auto size = controlRect->sizeDelta;
+            auto position = controlRect->position;
+            auto controlSize = controlRect->sizeDelta;
             controlRect->SetParent(rect, true);
-            controlRect->position = baseWorld;
-            controlRect->sizeDelta = size;
-            control = controlRect;
+            controlRect->position = position;
+            controlRect->sizeDelta = controlSize;
             Logger.info("Viewport created, pitch {} height {} slots {} tabs {}", pitch, height, slots, count);
-        } else {
-            control = controlRect;
         }
+        control = controlRect;
 
+        float arrowHeight = height * 0.6f;
         if (!leftArrow) {
             auto left = MakeArrow("<", [] { Previous(); });
-            left->anchoredPosition = {originX, top};
+            left->sizeDelta = {pitch, arrowHeight};
+            left->anchoredPosition = {originX, top - height};
             leftArrow = left->gameObject;
         }
         if (!rightArrow) {
             auto right = MakeArrow(">", [] { Next(); });
-            right->anchoredPosition = {originX + (slots - 1) * pitch, top};
+            right->sizeDelta = {pitch, arrowHeight};
+            right->anchoredPosition = {originX + (slots - 1) * pitch, top - height};
             rightArrow = right->gameObject;
         }
-        offset = std::min(offset, MaxOffset());
+        page = std::min(page, PageCount() - 1);
         Apply();
     }
 }

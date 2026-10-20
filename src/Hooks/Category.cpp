@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
@@ -15,7 +16,8 @@ namespace {
     using Category = SelectLevelCategoryViewController::LevelCategory;
     using Info = SelectLevelCategoryViewController::LevelCategoryInfo;
 
-    int ourCategory = -1;
+    constexpr int Wanted = 2;
+    std::vector<int> ours;
 
     int FindFreeValue(ArrayW<Info*> infos) {
         int highest = 0;
@@ -27,18 +29,22 @@ namespace {
         return highest + 1;
     }
 
-    bool HasInfo(ArrayW<Info*> infos) {
+    bool IsOurs(int value) {
+        return std::find(ours.begin(), ours.end(), value) != ours.end();
+    }
+
+    bool HasInfo(ArrayW<Info*> infos, int value) {
         for (auto info : infos) {
-            if (info && info->levelCategory.value__ == ourCategory) {
+            if (info && info->levelCategory.value__ == value) {
                 return true;
             }
         }
         return false;
     }
 
-    bool HasCategory(ArrayW<Category> categories) {
+    bool HasCategory(ArrayW<Category> categories, int value) {
         for (auto category : categories) {
-            if (category.value__ == ourCategory) {
+            if (category.value__ == value) {
                 return true;
             }
         }
@@ -56,31 +62,40 @@ namespace {
         if (!infos) {
             return;
         }
-        if (ourCategory < 0) {
-            ourCategory = FindFreeValue(infos);
-            Logger.info("Using category {}", ourCategory);
+        if (ours.empty()) {
+            int first = FindFreeValue(infos);
+            for (int i = 0; i < Wanted; i++) {
+                ours.push_back(first + i);
+            }
+            Logger.info("Using categories {} to {}", first, first + Wanted - 1);
         }
-        if (HasInfo(infos)) {
-            return;
+        for (int value : ours) {
+            if (HasInfo(infos, value)) {
+                continue;
+            }
+            auto info = Info::New_ctor();
+            info->levelCategory = value;
+            info->localizedKey = "";
+            info->categoryIcon = LoadIcon();
+            ArrayW<Info*> extended(infos.size() + 1);
+            infos.copy_to(extended, 0);
+            extended[infos.size()] = info;
+            infos = extended;
         }
-        auto info = Info::New_ctor();
-        info->levelCategory = ourCategory;
-        info->localizedKey = "";
-        info->categoryIcon = LoadIcon();
-        ArrayW<Info*> extended(infos.size() + 1);
-        infos.copy_to(extended, 0);
-        extended[infos.size()] = info;
-        self->_allLevelCategoryInfos = extended;
+        self->_allLevelCategoryInfos = infos;
     }
 
     ArrayW<Category> AddCategory(ArrayW<Category> categories) {
-        if (ourCategory < 0 || HasCategory(categories)) {
-            return categories;
+        for (int value : ours) {
+            if (HasCategory(categories, value)) {
+                continue;
+            }
+            ArrayW<Category> extended(categories.size() + 1);
+            categories.copy_to(extended, 0);
+            extended[categories.size()] = value;
+            categories = extended;
         }
-        ArrayW<Category> extended(categories.size() + 1);
-        categories.copy_to(extended, 0);
-        extended[categories.size()] = ourCategory;
-        return extended;
+        return categories;
     }
 }
 
@@ -108,7 +123,7 @@ MAKE_LATE_HOOK_MATCH(
     LevelFilteringNavigationController* self,
     Category category
 ) {
-    if (ourCategory >= 0 && category.value__ == ourCategory) {
+    if (IsOurs(category.value__)) {
         Logger.info("Our tab was selected");
         return;
     }

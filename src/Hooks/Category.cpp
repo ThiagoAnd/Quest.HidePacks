@@ -7,7 +7,6 @@
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
 #include "Icon.hpp"
-#include "UnityEngine/RectTransform.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 
 using namespace GlobalNamespace;
@@ -16,12 +15,7 @@ namespace {
     using Category = SelectLevelCategoryViewController::LevelCategory;
     using Info = SelectLevelCategoryViewController::LevelCategoryInfo;
 
-    constexpr int GameTabs = 4;
-    constexpr float GameWidth = 30.0f;
-    constexpr float TabWidth = 7.5f;
-
     int ourCategory = -1;
-    int enabledTabs = 0;
 
     int FindFreeValue(ArrayW<Info*> infos) {
         int highest = 0;
@@ -88,19 +82,6 @@ namespace {
         extended[categories.size()] = ourCategory;
         return extended;
     }
-
-    void Widen(SelectLevelCategoryViewController* self) {
-        if (enabledTabs <= GameTabs) {
-            return;
-        }
-        float wanted = GameWidth + static_cast<float>(enabledTabs - GameTabs) * TabWidth;
-        auto rect = self->get_rectTransform();
-        auto size = rect->sizeDelta;
-        if (size.x < wanted) {
-            rect->sizeDelta = {wanted, size.y};
-            Logger.info("Category bar width {} for {} tabs", wanted, enabledTabs);
-        }
-    }
 }
 
 MAKE_LATE_HOOK_MATCH(
@@ -114,28 +95,10 @@ MAKE_LATE_HOOK_MATCH(
     try {
         AddInfo(self);
         enabled = AddCategory(enabled);
-        enabledTabs = enabled.size();
     } catch (std::exception const& e) {
         Logger.warn("Could not add the category: {}", e.what());
     }
     SelectLevelCategoryViewController_Setup(self, selected, enabled);
-}
-
-MAKE_LATE_HOOK_MATCH(
-    SelectLevelCategoryViewController_DidActivate,
-    &SelectLevelCategoryViewController::DidActivate,
-    void,
-    SelectLevelCategoryViewController* self,
-    bool firstActivation,
-    bool addedToHierarchy,
-    bool screenSystemEnabling
-) {
-    SelectLevelCategoryViewController_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
-    try {
-        Widen(self);
-    } catch (std::exception const& e) {
-        Logger.warn("Could not widen the bar: {}", e.what());
-    }
 }
 
 MAKE_LATE_HOOK_MATCH(

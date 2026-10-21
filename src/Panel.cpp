@@ -13,7 +13,9 @@
 #include "UnityEngine/Resources.hpp"
 #include "UnityEngine/RectTransform.hpp"
 #include "UnityEngine/TextAnchor.hpp"
+#include "UnityEngine/Color.hpp"
 #include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
+#include "UnityEngine/UI/Image.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
 #include "UnityEngine/UI/VerticalLayoutGroup.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
@@ -29,7 +31,8 @@ namespace {
     constexpr float SlotWidth = 95.0f;
     constexpr float SlotHeight = 10.0f;
     constexpr float SlotCenter = 17.0f;
-    constexpr float PanelTop = 6.0f;
+    constexpr float PanelTop = 12.0f;
+    constexpr float CoverSize = 6.0f;
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -73,6 +76,18 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     }
     gameObject->AddComponent<HMUI::Touchable*>();
 
+    auto headerGroup = Row(transform, SlotHeight);
+    auto headerRect = headerGroup->GetComponent<UnityEngine::RectTransform*>();
+    headerRect->anchorMin = {0.5f, 1.0f};
+    headerRect->anchorMax = {0.5f, 1.0f};
+    headerRect->pivot = {0.5f, 1.0f};
+    headerRect->sizeDelta = {SlotWidth, SlotHeight};
+    headerRect->anchoredPosition = {0.0f, 0.0f};
+    headerGroup->childForceExpandWidth = true;
+    BSML::Lite::CreateUIButton(headerGroup->transform, "All", [] { Logger.info("All"); });
+    BSML::Lite::CreateUIButton(headerGroup->transform, "None", [] { Logger.info("None"); });
+    BSML::Lite::CreateUIButton(headerGroup->transform, "Invert", [] { Logger.info("Invert"); });
+
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
     rootRect->anchorMin = {0.5f, 1.0f};
@@ -87,23 +102,36 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     root->childForceExpandWidth = true;
     root->childForceExpandHeight = false;
 
-    auto header = Row(root->transform, 8.0f);
-    BSML::Lite::CreateUIButton(header->transform, "All", [] { Logger.info("All"); });
-    BSML::Lite::CreateUIButton(header->transform, "None", [] { Logger.info("None"); });
-    BSML::Lite::CreateUIButton(header->transform, "Invert", [] { Logger.info("Invert"); });
-
     auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
-    Sized(list->transform, root->transform, ListHeight);
+    auto listElement = Sized(list->transform, root->transform, ListHeight);
+    auto listRoot = listElement->gameObject;
+    auto catcher = listRoot->GetComponent<UnityEngine::UI::Image*>();
+    if (!catcher) {
+        catcher = listRoot->AddComponent<UnityEngine::UI::Image*>();
+    }
+    catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
+    catcher->raycastTarget = true;
     for (auto name : SampleNames) {
-        auto toggle = BSML::Lite::CreateToggle(list->transform, name, true, [name](bool value) {
+        auto line = Row(list->transform, CoverSize + 1.0f);
+        line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
+        auto cover = UnityEngine::GameObject::New_ctor("Cover");
+        cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
+        auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
+        picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
+        size->minWidth = CoverSize;
+        size->preferredWidth = CoverSize;
+        size->minHeight = CoverSize;
+        size->preferredHeight = CoverSize;
+        auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name](bool value) {
             Logger.info("{} {}", name, value);
         });
         auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!element) {
             element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
         }
-        element->minWidth = PanelWidth - 14.0f;
-        element->preferredWidth = PanelWidth - 14.0f;
+        element->minWidth = PanelWidth - 22.0f;
+        element->preferredWidth = PanelWidth - 22.0f;
         element->flexibleWidth = 0.0f;
     }
 

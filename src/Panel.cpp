@@ -117,6 +117,7 @@ namespace {
 
     template <typename T>
     void DumpType(char const* label) {
+      try {
         auto all = UnityEngine::Resources::FindObjectsOfTypeAll<T*>();
         for (auto item : all) {
             if (!item) {
@@ -130,6 +131,11 @@ namespace {
                 rect ? rect->localPosition.x : 0.0f, rect ? rect->localPosition.y : 0.0f, PathOf(item->transform)
             );
         }
+      } catch (std::exception const& e) {
+        Logger.warn("Dump {} failed: {}", label, e.what());
+      } catch (...) {
+        Logger.warn("Dump {} failed", label);
+      }
     }
 }
 
@@ -145,6 +151,7 @@ namespace Panel {
     }
 
     void SetListVisible(bool visible) {
+      try {
         static UnityW<UnityEngine::CanvasGroup> group;
         if (!group) {
             auto all = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionNavigationController*>();
@@ -166,6 +173,9 @@ namespace Panel {
         group->alpha = visible ? 1.0f : 0.0f;
         group->blocksRaycasts = visible;
         group->interactable = visible;
+      } catch (...) {
+        Logger.warn("SetListVisible failed");
+      }
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {

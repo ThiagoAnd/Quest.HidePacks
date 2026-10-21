@@ -55,6 +55,8 @@ namespace {
     };
     std::vector<RowState> rowStates;
     UnityW<UnityEngine::RectTransform> viewportRect;
+    bool listHidden = false;
+    int hiddenTicks = 0;
     UnityW<UnityEngine::RectTransform> probeFooter;
     UnityW<UnityEngine::RectTransform> probeList;
 
@@ -339,6 +341,7 @@ namespace {
 
 namespace Panel {
     void SetListVisible(bool visible) {
+        listHidden = !visible;
         SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
         SetVisible<GlobalNamespace::LevelCollectionNavigationController>(visible);
@@ -361,6 +364,14 @@ namespace Panel {
 }
 
 void HidePacks::PanelViewController::Update() {
+    if (listHidden) {
+        SetVisible<GlobalNamespace::LevelCollectionViewController>(false);
+        SetVisible<GlobalNamespace::LevelPackDetailViewController>(false);
+        SetVisible<GlobalNamespace::LevelCollectionNavigationController>(false);
+        if (++hiddenTicks % 30 == 0) {
+            SetRaycasts(false);
+        }
+    }
     if (!viewportRect) {
         return;
     }

@@ -38,8 +38,8 @@ namespace {
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
-    constexpr float HeaderHeight = 10.0f;
-    constexpr float HeaderLift = 0.4f;
+    constexpr float HeaderHeight = 9.0f;
+    constexpr float HeaderLift = 0.0f;
 
 
     UnityW<UnityEngine::RectTransform> probeFooter;
@@ -219,13 +219,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         graphic->raycastTarget = true;
     }
 
-    auto footer = Row(transform, ButtonHeight);
+    auto footer = Row(root->transform, ButtonHeight);
     auto footerRect = footer->GetComponent<UnityEngine::RectTransform*>();
-    footerRect->anchorMin = {0.5f, 1.0f};
-    footerRect->anchorMax = {0.5f, 1.0f};
-    footerRect->pivot = {0.5f, 1.0f};
-    footerRect->sizeDelta = {PanelWidth, ButtonHeight};
-    footerRect->anchoredPosition = {-SlotCenter, -(PanelTop + ListHeight + 1.5f)};
     BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
     MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
     MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });

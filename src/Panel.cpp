@@ -31,9 +31,9 @@ namespace {
     };
 
     UnityEngine::UI::LayoutElement* Sized(UnityEngine::Transform* child, UnityEngine::Transform* root, float height) {
-        auto top = child;
-        while (top->parent && top->parent != root) {
-            top = top->parent;
+        UnityEngine::Transform* top = child;
+        while (top->parent && top->parent.ptr() != root) {
+            top = top->parent.ptr();
         }
         auto element = top->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!element) {

@@ -243,6 +243,38 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
 }
 
 namespace {
+    std::vector<UnityW<UnityEngine::UI::Graphic>> muted;
+
+    void SetRaycasts(bool enabled) {
+        try {
+            if (enabled) {
+                for (auto graphic : muted) {
+                    if (graphic) {
+                        graphic->raycastTarget = true;
+                    }
+                }
+                muted.clear();
+                return;
+            }
+            for (auto navigation : UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionNavigationController*>()) {
+                if (!navigation || !navigation->gameObject->activeInHierarchy) {
+                    continue;
+                }
+                for (auto graphic : navigation->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+                    if (graphic && graphic->raycastTarget) {
+                        graphic->raycastTarget = false;
+                        muted.push_back(graphic);
+                    }
+                }
+                break;
+            }
+        } catch (std::exception const& e) {
+            Logger.warn("Could not mute raycasts: {}", e.what());
+        }
+    }
+}
+
+namespace {
     template <typename T>
     void SetVisible(bool visible) {
         static UnityW<UnityEngine::CanvasGroup> group;
@@ -277,6 +309,7 @@ namespace Panel {
         SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
         SetVisible<GlobalNamespace::LevelCollectionNavigationController>(visible);
+        SetRaycasts(visible);
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {

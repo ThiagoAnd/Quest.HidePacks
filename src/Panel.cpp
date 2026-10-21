@@ -38,7 +38,8 @@ namespace {
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
-    constexpr float HeaderLift = -0.6f;
+    constexpr float HeaderHeight = 10.0f;
+    constexpr float HeaderLift = 0.4f;
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -61,7 +62,7 @@ namespace {
         return element;
     }
 
-    UnityEngine::UI::Button* MakeButton(UnityEngine::Transform* parent, char const* text, std::string_view style, std::function<void()> onClick) {
+    UnityEngine::UI::Button* MakeButton(UnityEngine::Transform* parent, char const* text, std::string_view style, float height, std::function<void()> onClick) {
         auto button = BSML::Lite::CreateUIButton(parent, text, style, {0.0f, 0.0f}, {0.0f, 0.0f}, std::move(onClick));
         if (!button) {
             return button;
@@ -70,8 +71,8 @@ namespace {
         if (!element) {
             element = button->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
         }
-        element->minHeight = ButtonHeight;
-        element->preferredHeight = ButtonHeight;
+        element->minHeight = height;
+        element->preferredHeight = height;
         return button;
     }
 
@@ -96,17 +97,17 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     }
     gameObject->AddComponent<HMUI::Touchable*>();
 
-    auto headerGroup = Row(transform, ButtonHeight);
+    auto headerGroup = Row(transform, HeaderHeight);
     auto headerRect = headerGroup->GetComponent<UnityEngine::RectTransform*>();
     headerRect->anchorMin = {0.5f, 1.0f};
     headerRect->anchorMax = {0.5f, 1.0f};
     headerRect->pivot = {0.5f, 1.0f};
-    headerRect->sizeDelta = {SlotWidth, ButtonHeight};
+    headerRect->sizeDelta = {SlotWidth, HeaderHeight};
     headerRect->anchoredPosition = {0.0f, HeaderLift};
     headerGroup->childForceExpandWidth = true;
-    MakeButton(headerGroup->transform, "All", "PracticeButton", [] { Logger.info("All"); });
-    MakeButton(headerGroup->transform, "None", "PracticeButton", [] { Logger.info("None"); });
-    MakeButton(headerGroup->transform, "Invert", "PracticeButton", [] { Logger.info("Invert"); });
+    MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); });
+    MakeButton(headerGroup->transform, "None", "PracticeButton", HeaderHeight, [] { Logger.info("None"); });
+    MakeButton(headerGroup->transform, "Invert", "PracticeButton", HeaderHeight, [] { Logger.info("Invert"); });
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
@@ -179,10 +180,16 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         graphic->raycastTarget = true;
     }
 
-    auto footer = Row(root->transform, ButtonHeight);
+    auto footer = Row(transform, ButtonHeight);
+    auto footerRect = footer->GetComponent<UnityEngine::RectTransform*>();
+    footerRect->anchorMin = {0.5f, 1.0f};
+    footerRect->anchorMax = {0.5f, 1.0f};
+    footerRect->pivot = {0.5f, 1.0f};
+    footerRect->sizeDelta = {PanelWidth, ButtonHeight};
+    footerRect->anchoredPosition = {-SlotCenter, -(PanelTop + ListHeight + 1.5f)};
     BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
-    MakeButton(footer->transform, "Cancel", "PracticeButton", [] { Logger.info("Cancel"); });
-    MakeButton(footer->transform, "Apply", "PlayButton", [] { Logger.info("Apply"); });
+    MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
+    MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
 }
 
 namespace {

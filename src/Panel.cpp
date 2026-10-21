@@ -12,6 +12,7 @@
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
+#include "UnityEngine/Collider.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Resources.hpp"
 #include "UnityEngine/RectTransform.hpp"
@@ -76,6 +77,11 @@ namespace {
             for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
                 auto point = button->transform->position;
                 Logger.info("Under button {}", static_cast<std::string>(button->gameObject->name));
+                for (auto collider : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Collider*>()) {
+                    if (collider && collider->enabled && collider->gameObject->activeInHierarchy && collider->bounds.SqrDistance(point) < 1.0f) {
+                        Logger.info("  collider {}", PathOf(collider->transform));
+                    }
+                }
                 for (auto graphic : all) {
                     if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
                         continue;

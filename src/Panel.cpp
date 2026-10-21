@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "HMUI/Touchable.hpp"
+#include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/GameObject.hpp"
+#include "UnityEngine/Resources.hpp"
 #include "UnityEngine/RectTransform.hpp"
 #include "UnityEngine/TextAnchor.hpp"
 #include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
@@ -19,7 +22,7 @@
 DEFINE_TYPE(HidePacks, PanelViewController);
 
 namespace {
-    constexpr float PanelWidth = 90.0f;
+    constexpr float PanelWidth = 80.0f;
     constexpr float PanelHeight = 62.0f;
     constexpr float ListHeight = 40.0f;
 
@@ -67,9 +70,9 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
-    rootRect->anchorMin = {0.5f, 0.5f};
-    rootRect->anchorMax = {0.5f, 0.5f};
-    rootRect->pivot = {0.5f, 0.5f};
+    rootRect->anchorMin = {0.5f, 1.0f};
+    rootRect->anchorMax = {0.5f, 1.0f};
+    rootRect->pivot = {0.5f, 1.0f};
     rootRect->sizeDelta = {PanelWidth, PanelHeight};
     rootRect->anchoredPosition = {0.0f, 0.0f};
     root->spacing = 1.5f;
@@ -99,11 +102,36 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
 }
 
 namespace Panel {
+    void SetListVisible(bool visible) {
+        static UnityW<UnityEngine::CanvasGroup> group;
+        if (!group) {
+            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionNavigationController*>();
+            for (auto navigation : all) {
+                if (navigation && navigation->gameObject->activeInHierarchy) {
+                    auto object = navigation->gameObject;
+                    group = object->GetComponent<UnityEngine::CanvasGroup*>();
+                    if (!group) {
+                        group = object->AddComponent<UnityEngine::CanvasGroup*>();
+                    }
+                    break;
+                }
+            }
+        }
+        if (!group) {
+            Logger.warn("List controller not found");
+            return;
+        }
+        group->alpha = visible ? 1.0f : 0.0f;
+        group->blocksRaycasts = visible;
+        group->interactable = visible;
+    }
+
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {
         static UnityW<HidePacks::PanelViewController> panel;
         if (!panel) {
             panel = BSML::Helpers::CreateViewController<HidePacks::PanelViewController*>();
         }
         navigation->ReplaceSecondViewController(panel.ptr());
+        SetListVisible(false);
     }
 }

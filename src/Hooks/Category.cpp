@@ -133,6 +133,7 @@ MAKE_LATE_HOOK_MATCH(
         }
         return;
     }
+    Panel::SetListVisible(true);
     LevelFilteringNavigationController_UpdateSecondChildControllerContent(self, category);
     if (self->_annotatedBeatmapLevelCollectionsViewController) {
         self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(category.value__ <= 2);

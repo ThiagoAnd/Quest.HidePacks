@@ -5,7 +5,11 @@
 #include <vector>
 
 #include "GlobalNamespace/LevelCollectionNavigationController.hpp"
+#include "GlobalNamespace/LevelCollectionViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
+#include "GlobalNamespace/LevelPackDetailViewController.hpp"
+#include "GlobalNamespace/LevelSearchViewController.hpp"
+#include "GlobalNamespace/StandardLevelDetailViewController.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/GameObject.hpp"
@@ -101,7 +105,45 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     BSML::Lite::CreateUIButton(footer->transform, "Apply", [] { Logger.info("Apply"); });
 }
 
+namespace {
+    std::string PathOf(UnityEngine::Transform* transform) {
+        std::string path;
+        int depth = 0;
+        for (auto current = transform; current && depth < 8; current = current->parent.ptr(), depth++) {
+            path = std::string(current->gameObject->name) + (path.empty() ? "" : "/") + path;
+        }
+        return path;
+    }
+
+    template <typename T>
+    void DumpType(char const* label) {
+        auto all = UnityEngine::Resources::FindObjectsOfTypeAll<T*>();
+        for (auto item : all) {
+            if (!item) {
+                continue;
+            }
+            auto rect = item->template GetComponent<UnityEngine::RectTransform*>();
+            auto group = item->template GetComponent<UnityEngine::CanvasGroup*>();
+            Logger.info(
+                "{} active {} alpha {} size {} {} pos {} {} path {}", label, item->gameObject->activeInHierarchy,
+                group ? group->alpha : -1.0f, rect ? rect->rect.width : 0.0f, rect ? rect->rect.height : 0.0f,
+                rect ? rect->localPosition.x : 0.0f, rect ? rect->localPosition.y : 0.0f, PathOf(item->transform)
+            );
+        }
+    }
+}
+
 namespace Panel {
+    void Dump(int category) {
+        Logger.info("---- category {}", category);
+        DumpType<GlobalNamespace::LevelCollectionNavigationController>("collectionNav");
+        DumpType<GlobalNamespace::LevelCollectionViewController>("collectionList");
+        DumpType<GlobalNamespace::LevelPackDetailViewController>("packDetail");
+        DumpType<GlobalNamespace::StandardLevelDetailViewController>("levelDetail");
+        DumpType<GlobalNamespace::LevelSearchViewController>("search");
+        DumpType<HidePacks::PanelViewController>("panel");
+    }
+
     void SetListVisible(bool visible) {
         static UnityW<UnityEngine::CanvasGroup> group;
         if (!group) {

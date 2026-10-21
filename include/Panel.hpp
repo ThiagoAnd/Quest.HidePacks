@@ -12,6 +12,7 @@ namespace GlobalNamespace {
 }
 
 namespace Panel {
+    void Dump(int category);
     void SetListVisible(bool visible);
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation);
 }

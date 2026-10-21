@@ -131,6 +131,7 @@ MAKE_LATE_HOOK_MATCH(
         if (self->_annotatedBeatmapLevelCollectionsViewController) {
             self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(false);
         }
+        Panel::Dump(category.value__);
         return;
     }
     Panel::SetListVisible(true);
@@ -138,4 +139,5 @@ MAKE_LATE_HOOK_MATCH(
     if (self->_annotatedBeatmapLevelCollectionsViewController) {
         self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(category.value__ <= 2);
     }
+    Panel::Dump(category.value__);
 }

@@ -1,6 +1,7 @@
 #include "Panel.hpp"
 
 #include <array>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,7 @@ namespace {
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
-    constexpr float HeaderHeight = 9.0f;
+    constexpr float HeaderHeight = 9.6f;
     constexpr float HeaderLift = 0.0f;
 
 
@@ -67,14 +68,18 @@ namespace {
                 return;
             }
             auto all = UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::UI::Graphic*>();
-            for (auto graphic : all) {
-                if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
-                    continue;
-                }
-                auto center = probeFooter->InverseTransformPoint(graphic->transform->position);
-                auto rect = probeFooter->rect;
-                if (center.x >= rect.xMin && center.x <= rect.xMax && center.y >= rect.yMin && center.y <= rect.yMax) {
-                    Logger.info("Over footer: {}", PathOf(graphic->transform));
+            for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
+                auto point = button->transform->position;
+                Logger.info("Under button {}", static_cast<std::string>(button->gameObject->name));
+                for (auto graphic : all) {
+                    if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
+                        continue;
+                    }
+                    auto local = graphic->rectTransform->InverseTransformPoint(point);
+                    auto rect = graphic->rectTransform->rect;
+                    if (local.x >= rect.xMin && local.x <= rect.xMax && local.y >= rect.yMin && local.y <= rect.yMax && std::abs(local.z) < 5.0f) {
+                        Logger.info("  z {} {}", local.z, PathOf(graphic->transform));
+                    }
                 }
             }
         } catch (std::exception const& e) {

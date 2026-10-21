@@ -8,6 +8,9 @@ DECLARE_CLASS_CODEGEN(HidePacks, PanelViewController, HMUI::ViewController) {
     DECLARE_INSTANCE_METHOD(void, Update);
 };
 
+DECLARE_CLASS_CODEGEN(HidePacks, PaneViewController, HMUI::ViewController) {
+};
+
 namespace GlobalNamespace {
     class LevelFilteringNavigationController;
 }

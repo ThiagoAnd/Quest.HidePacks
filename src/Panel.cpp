@@ -9,6 +9,7 @@
 #include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelPackDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
+#include "HMUI/CurvedTextMeshPro.hpp"
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
@@ -31,22 +32,22 @@
 #include "logger.hpp"
 
 DEFINE_TYPE(HidePacks, PanelViewController);
+DEFINE_TYPE(HidePacks, PaneViewController);
 
 namespace {
-    constexpr float PanelWidth = 80.0f;
-    constexpr float PanelHeight = 62.0f;
-    constexpr float ListHeight = 40.0f;
     constexpr float SlotWidth = 95.0f;
     constexpr float SlotHeight = 10.0f;
     constexpr float CanvasHeight = 120.0f;
-    constexpr float CanvasLift = (CanvasHeight - SlotHeight) / 2.0f;
-    constexpr float SlotCenter = 17.0f;
     constexpr float PanelTop = 12.0f;
+    constexpr float PaneHeight = 56.0f;
+    constexpr float PaneCenterY = -(PanelTop - SlotHeight / 2.0f) - PaneHeight / 2.0f;
+    constexpr float ListWidth = 75.0f;
+    constexpr float ListX = -54.0f;
+    constexpr float SideWidth = 70.0f;
+    constexpr float SideX = 22.5f;
+    constexpr float ToggleWidth = 53.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
-    constexpr float HeaderHeight = 9.6f;
-    constexpr float HeaderLift = 0.0f;
-
 
     struct RowState {
         UnityW<UnityEngine::Transform> transform;
@@ -57,70 +58,6 @@ namespace {
     UnityW<UnityEngine::RectTransform> viewportRect;
     bool listHidden = false;
     int hiddenTicks = 0;
-    UnityW<UnityEngine::RectTransform> probeFooter;
-    UnityW<UnityEngine::RectTransform> probeList;
-
-    std::string PathOf(UnityEngine::Transform* transform) {
-        std::string path;
-        int depth = 0;
-        while (transform && depth < 12) {
-            path = static_cast<std::string>(transform->name) + "/" + path;
-            transform = transform->parent;
-            depth++;
-        }
-        return path;
-    }
-
-    bool Near(UnityEngine::Bounds bounds, UnityEngine::Vector3 point) {
-        auto center = bounds.get_center();
-        auto extents = bounds.get_extents();
-        return std::abs(point.x - center.x) <= extents.x + 1.0f && std::abs(point.y - center.y) <= extents.y + 1.0f && std::abs(point.z - center.z) <= extents.z + 1.0f;
-    }
-
-    void Probe() {
-        try {
-            if (probeList) {
-                Logger.info("List rect {} x {} at {} {} children {}", probeList->rect.width, probeList->rect.height, probeList->anchoredPosition.x, probeList->anchoredPosition.y, probeList->childCount);
-            }
-            if (!probeFooter) {
-                return;
-            }
-            auto canvas = probeFooter->GetComponentInParent<UnityEngine::Canvas*>();
-            if (canvas) {
-                auto canvasRect = canvas->GetComponent<UnityEngine::RectTransform*>();
-                auto size = canvasRect->rect;
-                Logger.info("Canvas {} rect x {} to {} y {} to {}", PathOf(canvas->transform), size.xMin, size.xMax, size.yMin, size.yMax);
-                for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
-                    auto local = canvasRect->InverseTransformPoint(button->transform->position);
-                    Logger.info("Button local {} {} {}", local.x, local.y, local.z);
-                }
-                auto listLocal = canvasRect->InverseTransformPoint(probeList->position);
-                Logger.info("List local {} {} {}", listLocal.x, listLocal.y, listLocal.z);
-            }
-            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::UI::Graphic*>();
-            for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
-                auto point = button->transform->position;
-                Logger.info("Under button {}", static_cast<std::string>(button->gameObject->name));
-                for (auto collider : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Collider*>()) {
-                    if (collider && collider->enabled && collider->gameObject->activeInHierarchy && Near(collider->bounds, point)) {
-                        Logger.info("  collider {}", PathOf(collider->transform));
-                    }
-                }
-                for (auto graphic : all) {
-                    if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
-                        continue;
-                    }
-                    auto local = graphic->rectTransform->InverseTransformPoint(point);
-                    auto rect = graphic->rectTransform->rect;
-                    if (local.x >= rect.xMin && local.x <= rect.xMax && local.y >= rect.yMin && local.y <= rect.yMax && std::abs(local.z) < 5.0f) {
-                        Logger.info("  z {} {}", local.z, PathOf(graphic->transform));
-                    }
-                }
-            }
-        } catch (std::exception const& e) {
-            Logger.warn("Probe failed: {}", e.what());
-        }
-    }
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -172,109 +109,134 @@ namespace {
     }
 }
 
+namespace {
+    UnityEngine::Transform* MakePane(UnityEngine::Transform* parent, float x, float width) {
+        auto pane = BSML::Helpers::CreateViewController<HidePacks::PaneViewController*>();
+        auto rect = pane->GetComponent<UnityEngine::RectTransform*>();
+        rect->SetParent(parent, false);
+        rect->anchorMin = {0.5f, 0.5f};
+        rect->anchorMax = {0.5f, 0.5f};
+        rect->pivot = {0.5f, 0.5f};
+        rect->sizeDelta = {width, PaneHeight};
+        rect->anchoredPosition = {x, PaneCenterY};
+        pane->gameObject->AddComponent<HMUI::Touchable*>();
+        auto group = pane->gameObject->GetComponent<UnityEngine::CanvasGroup*>();
+        if (group) {
+            group->alpha = 1.0f;
+            group->blocksRaycasts = true;
+            group->interactable = true;
+        }
+        pane->gameObject->SetActive(true);
+        return pane->transform;
+    }
+
+    UnityEngine::UI::VerticalLayoutGroup* Fill(UnityEngine::Transform* pane, float spacing) {
+        auto root = BSML::Lite::CreateVerticalLayoutGroup(pane);
+        auto rect = root->GetComponent<UnityEngine::RectTransform*>();
+        rect->anchorMin = {0.0f, 0.0f};
+        rect->anchorMax = {1.0f, 1.0f};
+        rect->offsetMin = {0.0f, 0.0f};
+        rect->offsetMax = {0.0f, 0.0f};
+        root->spacing = spacing;
+        root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
+        root->childControlWidth = true;
+        root->childControlHeight = true;
+        root->childForceExpandWidth = true;
+        root->childForceExpandHeight = false;
+        return root;
+    }
+
+    void BuildList(UnityEngine::Transform* pane) {
+        auto root = Fill(pane, 0.0f);
+        auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
+        auto listElement = Sized(list->transform, root->transform, PaneHeight);
+        auto catcherObject = UnityEngine::GameObject::New_ctor("ScrollCatcher");
+        auto catcherRect = catcherObject->AddComponent<UnityEngine::RectTransform*>();
+        auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
+        catcherRect->SetParent(scroll ? scroll->transform : listElement->transform, false);
+        catcherRect->anchorMin = {0.0f, 0.0f};
+        catcherRect->anchorMax = {1.0f, 1.0f};
+        catcherRect->offsetMin = {0.0f, 0.0f};
+        catcherRect->offsetMax = {0.0f, 0.0f};
+        catcherRect->SetAsFirstSibling();
+        auto catcherLayout = catcherObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        if (catcherLayout) {
+            catcherLayout->ignoreLayout = true;
+        }
+        auto catcher = catcherObject->AddComponent<UnityEngine::UI::Image*>();
+        if (catcher) {
+            catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
+            catcher->raycastTarget = true;
+        }
+        for (auto name : SampleNames) {
+            auto line = Row(list->transform, CoverSize + 1.0f);
+            rowStates.push_back({line->transform, {}, true});
+            line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
+            auto cover = UnityEngine::GameObject::New_ctor("Cover");
+            cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
+            auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
+            picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+            auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
+            size->minWidth = CoverSize;
+            size->preferredWidth = CoverSize;
+            size->minHeight = CoverSize;
+            size->preferredHeight = CoverSize;
+            auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name](bool value) {
+                Logger.info("{} {}", name, value);
+            });
+            auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
+            if (!element) {
+                element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+            }
+            element->minWidth = ToggleWidth;
+            element->preferredWidth = ToggleWidth;
+            element->flexibleWidth = 0.0f;
+        }
+        for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+            graphic->raycastTarget = true;
+        }
+        if (scroll) {
+            auto viewportTransform = scroll->transform->Find("Viewport");
+            if (viewportTransform) {
+                viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
+            }
+        }
+    }
+
+    void BuildSide(UnityEngine::Transform* pane) {
+        auto root = Fill(pane, 2.0f);
+        auto title = BSML::Lite::CreateText(root->transform, "Hide Packs", 6.0f, {0.0f, 0.0f}, {SideWidth, 8.0f});
+        title->set_alignment(TMPro::TextAlignmentOptions::Center);
+        Sized(title->transform, root->transform, 8.0f);
+        auto counter = BSML::Lite::CreateText(root->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {SideWidth, 6.0f});
+        counter->set_alignment(TMPro::TextAlignmentOptions::Center);
+        Sized(counter->transform, root->transform, 6.0f);
+
+        auto selection = Row(root->transform, ButtonHeight);
+        selection->childForceExpandWidth = true;
+        MakeButton(selection->transform, "All", "PracticeButton", ButtonHeight, [] { Logger.info("All"); });
+        MakeButton(selection->transform, "None", "PracticeButton", ButtonHeight, [] { Logger.info("None"); });
+        MakeButton(selection->transform, "Invert", "PracticeButton", ButtonHeight, [] { Logger.info("Invert"); });
+
+        auto spacer = UnityEngine::GameObject::New_ctor("Spacer");
+        spacer->AddComponent<UnityEngine::RectTransform*>()->SetParent(root->transform, false);
+        auto spacerLayout = spacer->AddComponent<UnityEngine::UI::LayoutElement*>();
+        spacerLayout->flexibleHeight = 1.0f;
+
+        auto footer = Row(root->transform, ButtonHeight);
+        footer->childForceExpandWidth = true;
+        MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
+        MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
+    }
+}
+
 void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemDisabling) {
     if (!firstActivation) {
         return;
     }
     gameObject->AddComponent<HMUI::Touchable*>();
-
-    auto headerGroup = Row(transform, HeaderHeight);
-    auto headerRect = headerGroup->GetComponent<UnityEngine::RectTransform*>();
-    headerRect->anchorMin = {0.5f, 1.0f};
-    headerRect->anchorMax = {0.5f, 1.0f};
-    headerRect->pivot = {0.5f, 1.0f};
-    headerRect->sizeDelta = {SlotWidth, HeaderHeight};
-    headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
-    headerGroup->childForceExpandWidth = true;
-    MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); });
-    MakeButton(headerGroup->transform, "None", "PracticeButton", HeaderHeight, [] { Logger.info("None"); });
-    MakeButton(headerGroup->transform, "Invert", "PracticeButton", HeaderHeight, [] { Logger.info("Invert"); });
-
-    auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
-    auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
-    rootRect->anchorMin = {0.5f, 1.0f};
-    rootRect->anchorMax = {0.5f, 1.0f};
-    rootRect->pivot = {0.5f, 1.0f};
-    rootRect->sizeDelta = {PanelWidth, PanelHeight};
-    rootRect->anchoredPosition = {-SlotCenter, -PanelTop - CanvasLift};
-    root->spacing = 1.5f;
-    root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
-    root->childControlWidth = true;
-    root->childControlHeight = true;
-    root->childForceExpandWidth = true;
-    root->childForceExpandHeight = false;
-
-    auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
-    auto listElement = Sized(list->transform, root->transform, ListHeight);
-    auto listRoot = listElement->gameObject;
-    auto catcherObject = UnityEngine::GameObject::New_ctor("ScrollCatcher");
-    auto catcherRect = catcherObject->AddComponent<UnityEngine::RectTransform*>();
-    UnityEngine::Transform* catcherParent = listRoot->transform;
-    auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
-    if (scroll) {
-        catcherParent = scroll->transform;
-    }
-    Logger.info("Scroll view {} parent {}", scroll ? "found" : "missing", static_cast<std::string>(catcherParent->name));
-    catcherRect->SetParent(catcherParent, false);
-    catcherRect->anchorMin = {0.0f, 0.0f};
-    catcherRect->anchorMax = {1.0f, 1.0f};
-    catcherRect->offsetMin = {0.0f, 0.0f};
-    catcherRect->offsetMax = {0.0f, 0.0f};
-    catcherRect->SetAsFirstSibling();
-    auto catcherLayout = catcherObject->AddComponent<UnityEngine::UI::LayoutElement*>();
-    if (catcherLayout) {
-        catcherLayout->ignoreLayout = true;
-    }
-    auto catcher = catcherObject->AddComponent<UnityEngine::UI::Image*>();
-    if (catcher) {
-        catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
-        catcher->raycastTarget = true;
-    } else {
-        Logger.warn("Could not add the scroll catcher");
-    }
-    Logger.info("Catcher size {} x {}", catcherRect->rect.width, catcherRect->rect.height);
-    for (auto name : SampleNames) {
-        auto line = Row(list->transform, CoverSize + 1.0f);
-        rowStates.push_back({line->transform, {}, true});
-        line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
-        auto cover = UnityEngine::GameObject::New_ctor("Cover");
-        cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
-        auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-        picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
-        auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
-        size->minWidth = CoverSize;
-        size->preferredWidth = CoverSize;
-        size->minHeight = CoverSize;
-        size->preferredHeight = CoverSize;
-        auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name](bool value) {
-            Logger.info("{} {}", name, value);
-        });
-        auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
-        if (!element) {
-            element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
-        }
-        element->minWidth = PanelWidth - 22.0f;
-        element->preferredWidth = PanelWidth - 22.0f;
-        element->flexibleWidth = 0.0f;
-    }
-
-    for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-        graphic->raycastTarget = true;
-    }
-
-    auto footer = Row(root->transform, ButtonHeight);
-    auto footerRect = footer->GetComponent<UnityEngine::RectTransform*>();
-    BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
-    MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
-    MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
-    if (scroll) {
-        auto viewportTransform = scroll->transform->Find("Viewport");
-        if (viewportTransform) {
-            viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
-        }
-    }
-    probeFooter = footerRect;
-    probeList = list->GetComponent<UnityEngine::RectTransform*>();
+    BuildList(MakePane(transform, ListX, ListWidth));
+    BuildSide(MakePane(transform, SideX, SideWidth));
 }
 
 namespace {

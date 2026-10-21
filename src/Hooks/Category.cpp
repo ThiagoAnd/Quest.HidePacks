@@ -5,9 +5,12 @@
 #include <cstring>
 #include <vector>
 
+#include "GlobalNamespace/AnnotatedBeatmapLevelCollectionsViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
 #include "Icon.hpp"
+#include "UnityEngine/GameObject.hpp"
+#include "Panel.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 
 using namespace GlobalNamespace;
@@ -124,8 +127,14 @@ MAKE_LATE_HOOK_MATCH(
     Category category
 ) {
     if (IsOurs(category.value__)) {
-        Logger.info("Our tab was selected");
+        Panel::Show(self);
+        if (self->_annotatedBeatmapLevelCollectionsViewController) {
+            self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(false);
+        }
         return;
     }
     LevelFilteringNavigationController_UpdateSecondChildControllerContent(self, category);
+    if (self->_annotatedBeatmapLevelCollectionsViewController) {
+        self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(category.value__ <= 2);
+    }
 }

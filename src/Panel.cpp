@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "GlobalNamespace/LevelCollectionViewController.hpp"
+#include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelPackDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "HMUI/ScrollView.hpp"
@@ -16,6 +17,7 @@
 #include "UnityEngine/TextAnchor.hpp"
 #include "UnityEngine/Color.hpp"
 #include "UnityEngine/UI/Button.hpp"
+#include "UnityEngine/UI/Graphic.hpp"
 #include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
 #include "UnityEngine/UI/Image.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
@@ -173,6 +175,10 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         element->flexibleWidth = 0.0f;
     }
 
+    for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+        graphic->raycastTarget = true;
+    }
+
     auto footer = Row(root->transform, ButtonHeight);
     BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
     MakeButton(footer->transform, "Cancel", "PracticeButton", [] { Logger.info("Cancel"); });
@@ -213,6 +219,7 @@ namespace Panel {
     void SetListVisible(bool visible) {
         SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
+        SetVisible<GlobalNamespace::LevelCollectionNavigationController>(visible);
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {

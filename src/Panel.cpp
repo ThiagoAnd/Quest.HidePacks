@@ -42,6 +42,8 @@ namespace {
     constexpr float HeaderLift = 0.0f;
 
 
+    std::vector<UnityW<UnityEngine::CanvasGroup>> rowGroups;
+    UnityW<UnityEngine::RectTransform> viewportRect;
     UnityW<UnityEngine::RectTransform> probeFooter;
     UnityW<UnityEngine::RectTransform> probeList;
 
@@ -193,6 +195,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     Logger.info("Catcher size {} x {}", catcherRect->rect.width, catcherRect->rect.height);
     for (auto name : SampleNames) {
         auto line = Row(list->transform, CoverSize + 1.0f);
+        rowGroups.push_back(line->gameObject->AddComponent<UnityEngine::CanvasGroup*>());
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
         auto cover = UnityEngine::GameObject::New_ctor("Cover");
         cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
@@ -224,6 +227,12 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
     MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
     MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
+    if (scroll) {
+        auto viewportTransform = scroll->transform->Find("Viewport");
+        if (viewportTransform) {
+            viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
+        }
+    }
     probeFooter = footerRect;
     probeList = list->GetComponent<UnityEngine::RectTransform*>();
 }
@@ -277,5 +286,22 @@ namespace Panel {
         }
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);
+    }
+}
+
+void HidePacks::PanelViewController::Update() {
+    if (!viewportRect) {
+        return;
+    }
+    auto bounds = viewportRect->rect;
+    for (auto group : rowGroups) {
+        if (!group) {
+            continue;
+        }
+        auto center = viewportRect->InverseTransformPoint(group->transform->position);
+        bool inside = center.y >= bounds.yMin && center.y <= bounds.yMax;
+        if (group->blocksRaycasts != inside) {
+            group->blocksRaycasts = inside;
+        }
     }
 }

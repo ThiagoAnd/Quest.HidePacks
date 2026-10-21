@@ -5,6 +5,7 @@
 
 DECLARE_CLASS_CODEGEN(HidePacks, PanelViewController, HMUI::ViewController) {
     DECLARE_OVERRIDE_METHOD_MATCH(void, DidActivate, &HMUI::ViewController::DidActivate, bool firstActivation, bool addedToHierarchy, bool screenSystemDisabling);
+    DECLARE_INSTANCE_METHOD(void, Update);
 };
 
 namespace GlobalNamespace {

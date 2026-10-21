@@ -38,6 +38,7 @@ namespace {
     constexpr float ListHeight = 40.0f;
     constexpr float SlotWidth = 95.0f;
     constexpr float SlotHeight = 10.0f;
+    constexpr float CanvasHeight = 70.0f;
     constexpr float SlotCenter = 17.0f;
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
@@ -350,8 +351,9 @@ namespace Panel {
             auto rect = panel->GetComponent<UnityEngine::RectTransform*>();
             rect->anchorMin = {0.5f, 0.5f};
             rect->anchorMax = {0.5f, 0.5f};
-            rect->pivot = {0.5f, 0.5f};
-            rect->sizeDelta = {SlotWidth, SlotHeight};
+            rect->pivot = {0.5f, 1.0f};
+            rect->sizeDelta = {SlotWidth, CanvasHeight};
+            rect->anchoredPosition = {0.0f, SlotHeight / 2.0f};
         }
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);

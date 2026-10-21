@@ -36,7 +36,7 @@ namespace {
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
-    constexpr float HeaderLift = 0.4f;
+    constexpr float HeaderLift = -0.6f;
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -130,6 +130,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     if (scroll) {
         catcherParent = scroll->transform;
     }
+    Logger.info("Scroll view {} parent {}", scroll ? "found" : "missing", static_cast<std::string>(catcherParent->name));
     catcherRect->SetParent(catcherParent, false);
     catcherRect->anchorMin = {0.0f, 0.0f};
     catcherRect->anchorMax = {1.0f, 1.0f};
@@ -147,6 +148,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     } else {
         Logger.warn("Could not add the scroll catcher");
     }
+    Logger.info("Catcher size {} x {}", catcherRect->rect.width, catcherRect->rect.height);
     for (auto name : SampleNames) {
         auto line = Row(list->transform, CoverSize + 1.0f);
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;

@@ -41,6 +41,45 @@ namespace {
     constexpr float HeaderHeight = 10.0f;
     constexpr float HeaderLift = 0.4f;
 
+
+    UnityW<UnityEngine::RectTransform> probeFooter;
+    UnityW<UnityEngine::RectTransform> probeList;
+
+    std::string PathOf(UnityEngine::Transform* transform) {
+        std::string path;
+        int depth = 0;
+        while (transform && depth < 12) {
+            path = static_cast<std::string>(transform->name) + "/" + path;
+            transform = transform->parent;
+            depth++;
+        }
+        return path;
+    }
+
+    void Probe() {
+        try {
+            if (probeList) {
+                Logger.info("List rect {} x {} at {} {} children {}", probeList->rect.width, probeList->rect.height, probeList->anchoredPosition.x, probeList->anchoredPosition.y, probeList->childCount);
+            }
+            if (!probeFooter) {
+                return;
+            }
+            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::UI::Graphic*>();
+            for (auto graphic : all) {
+                if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
+                    continue;
+                }
+                auto center = probeFooter->InverseTransformPoint(graphic->transform->position);
+                auto rect = probeFooter->rect;
+                if (center.x >= rect.xMin && center.x <= rect.xMax && center.y >= rect.yMin && center.y <= rect.yMax) {
+                    Logger.info("Over footer: {}", PathOf(graphic->transform));
+                }
+            }
+        } catch (std::exception const& e) {
+            Logger.warn("Probe failed: {}", e.what());
+        }
+    }
+
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
         "Original Soundtrack Vol. 4", "Original Soundtrack Vol. 5", "Original Soundtrack Vol. 6",
@@ -105,7 +144,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->sizeDelta = {SlotWidth, HeaderHeight};
     headerRect->anchoredPosition = {0.0f, HeaderLift};
     headerGroup->childForceExpandWidth = true;
-    MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); });
+    MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); });
     MakeButton(headerGroup->transform, "None", "PracticeButton", HeaderHeight, [] { Logger.info("None"); });
     MakeButton(headerGroup->transform, "Invert", "PracticeButton", HeaderHeight, [] { Logger.info("Invert"); });
 
@@ -190,6 +229,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
     MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
     MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
+    probeFooter = footerRect;
+    probeList = list->GetComponent<UnityEngine::RectTransform*>();
 }
 
 namespace {

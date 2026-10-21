@@ -38,7 +38,8 @@ namespace {
     constexpr float ListHeight = 40.0f;
     constexpr float SlotWidth = 95.0f;
     constexpr float SlotHeight = 10.0f;
-    constexpr float CanvasHeight = 70.0f;
+    constexpr float CanvasHeight = 120.0f;
+    constexpr float CanvasLift = (CanvasHeight - SlotHeight) / 2.0f;
     constexpr float SlotCenter = 17.0f;
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
@@ -181,7 +182,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->anchorMax = {0.5f, 1.0f};
     headerRect->pivot = {0.5f, 1.0f};
     headerRect->sizeDelta = {SlotWidth, HeaderHeight};
-    headerRect->anchoredPosition = {0.0f, HeaderLift};
+    headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
     headerGroup->childForceExpandWidth = true;
     MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); });
     MakeButton(headerGroup->transform, "None", "PracticeButton", HeaderHeight, [] { Logger.info("None"); });
@@ -193,7 +194,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     rootRect->anchorMax = {0.5f, 1.0f};
     rootRect->pivot = {0.5f, 1.0f};
     rootRect->sizeDelta = {PanelWidth, PanelHeight};
-    rootRect->anchoredPosition = {-SlotCenter, -PanelTop};
+    rootRect->anchoredPosition = {-SlotCenter, -PanelTop - CanvasLift};
     root->spacing = 1.5f;
     root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
     root->childControlWidth = true;
@@ -351,9 +352,8 @@ namespace Panel {
             auto rect = panel->GetComponent<UnityEngine::RectTransform*>();
             rect->anchorMin = {0.5f, 0.5f};
             rect->anchorMax = {0.5f, 0.5f};
-            rect->pivot = {0.5f, 1.0f};
+            rect->pivot = {0.5f, 0.5f};
             rect->sizeDelta = {SlotWidth, CanvasHeight};
-            rect->anchoredPosition = {0.0f, SlotHeight / 2.0f};
         }
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);

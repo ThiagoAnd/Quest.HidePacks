@@ -12,6 +12,7 @@
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
+#include "UnityEngine/Bounds.hpp"
 #include "UnityEngine/Collider.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Resources.hpp"
@@ -65,6 +66,12 @@ namespace {
         return path;
     }
 
+    bool Near(UnityEngine::Bounds bounds, UnityEngine::Vector3 point) {
+        auto center = bounds.get_center();
+        auto extents = bounds.get_extents();
+        return std::abs(point.x - center.x) <= extents.x + 1.0f && std::abs(point.y - center.y) <= extents.y + 1.0f && std::abs(point.z - center.z) <= extents.z + 1.0f;
+    }
+
     void Probe() {
         try {
             if (probeList) {
@@ -78,7 +85,7 @@ namespace {
                 auto point = button->transform->position;
                 Logger.info("Under button {}", static_cast<std::string>(button->gameObject->name));
                 for (auto collider : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Collider*>()) {
-                    if (collider && collider->enabled && collider->gameObject->activeInHierarchy && collider->bounds.SqrDistance(point) < 1.0f) {
+                    if (collider && collider->enabled && collider->gameObject->activeInHierarchy && Near(collider->bounds, point)) {
                         Logger.info("  collider {}", PathOf(collider->transform));
                     }
                 }

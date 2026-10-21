@@ -105,12 +105,25 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
     auto listElement = Sized(list->transform, root->transform, ListHeight);
     auto listRoot = listElement->gameObject;
-    auto catcher = listRoot->GetComponent<UnityEngine::UI::Image*>();
-    if (!catcher) {
-        catcher = listRoot->AddComponent<UnityEngine::UI::Image*>();
+    auto catcherObject = UnityEngine::GameObject::New_ctor("ScrollCatcher");
+    auto catcherRect = catcherObject->AddComponent<UnityEngine::RectTransform*>();
+    catcherRect->SetParent(listRoot->transform, false);
+    catcherRect->anchorMin = {0.0f, 0.0f};
+    catcherRect->anchorMax = {1.0f, 1.0f};
+    catcherRect->offsetMin = {0.0f, 0.0f};
+    catcherRect->offsetMax = {0.0f, 0.0f};
+    catcherRect->SetAsFirstSibling();
+    auto catcherLayout = catcherObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+    if (catcherLayout) {
+        catcherLayout->ignoreLayout = true;
     }
-    catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
-    catcher->raycastTarget = true;
+    auto catcher = catcherObject->AddComponent<UnityEngine::UI::Image*>();
+    if (catcher) {
+        catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
+        catcher->raycastTarget = true;
+    } else {
+        Logger.warn("Could not add the scroll catcher");
+    }
     for (auto name : SampleNames) {
         auto line = Row(list->transform, CoverSize + 1.0f);
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;

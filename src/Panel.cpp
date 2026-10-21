@@ -43,7 +43,12 @@ namespace {
     constexpr float HeaderLift = 0.0f;
 
 
-    std::vector<UnityW<UnityEngine::CanvasGroup>> rowGroups;
+    struct RowState {
+        UnityW<UnityEngine::Transform> transform;
+        std::vector<UnityW<UnityEngine::UI::Graphic>> graphics;
+        bool inside = true;
+    };
+    std::vector<RowState> rowStates;
     UnityW<UnityEngine::RectTransform> viewportRect;
     UnityW<UnityEngine::RectTransform> probeFooter;
     UnityW<UnityEngine::RectTransform> probeList;
@@ -200,7 +205,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     Logger.info("Catcher size {} x {}", catcherRect->rect.width, catcherRect->rect.height);
     for (auto name : SampleNames) {
         auto line = Row(list->transform, CoverSize + 1.0f);
-        rowGroups.push_back(line->gameObject->AddComponent<UnityEngine::CanvasGroup*>());
+        rowStates.push_back({line->transform, {}, true});
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
         auto cover = UnityEngine::GameObject::New_ctor("Cover");
         cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
@@ -332,14 +337,25 @@ void HidePacks::PanelViewController::Update() {
         return;
     }
     auto bounds = viewportRect->rect;
-    for (auto group : rowGroups) {
-        if (!group) {
+    for (auto& row : rowStates) {
+        if (!row.transform) {
             continue;
         }
-        auto center = viewportRect->InverseTransformPoint(group->transform->position);
+        auto center = viewportRect->InverseTransformPoint(row.transform->position);
         bool inside = center.y >= bounds.yMin && center.y <= bounds.yMax;
-        if (group->blocksRaycasts != inside) {
-            group->blocksRaycasts = inside;
+        if (inside == row.inside && !row.graphics.empty()) {
+            continue;
+        }
+        row.inside = inside;
+        if (row.graphics.empty()) {
+            for (auto graphic : row.transform->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+                row.graphics.push_back(graphic);
+            }
+        }
+        for (auto graphic : row.graphics) {
+            if (graphic) {
+                graphic->raycastTarget = inside;
+            }
         }
     }
 }

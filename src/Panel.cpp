@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "GlobalNamespace/LevelCollectionViewController.hpp"
+#include "GlobalNamespace/LevelPackDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
@@ -28,7 +29,7 @@ namespace {
     constexpr float SlotWidth = 95.0f;
     constexpr float SlotHeight = 10.0f;
     constexpr float SlotCenter = 17.0f;
-    constexpr float PanelTop = 12.0f;
+    constexpr float PanelTop = 6.0f;
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -112,33 +113,40 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     BSML::Lite::CreateUIButton(footer->transform, "Apply", [] { Logger.info("Apply"); });
 }
 
-namespace Panel {
-    void SetListVisible(bool visible) {
-      try {
+namespace {
+    template <typename T>
+    void SetVisible(bool visible) {
         static UnityW<UnityEngine::CanvasGroup> group;
-        if (!group) {
-            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionViewController*>();
-            for (auto navigation : all) {
-                if (navigation && navigation->gameObject->activeInHierarchy) {
-                    auto object = navigation->gameObject;
-                    group = object->GetComponent<UnityEngine::CanvasGroup*>();
-                    if (!group) {
-                        group = object->AddComponent<UnityEngine::CanvasGroup*>();
+        try {
+            if (!group) {
+                auto all = UnityEngine::Resources::FindObjectsOfTypeAll<T*>();
+                for (auto item : all) {
+                    if (item && item->gameObject->activeInHierarchy) {
+                        auto object = item->gameObject;
+                        group = object->template GetComponent<UnityEngine::CanvasGroup*>();
+                        if (!group) {
+                            group = object->template AddComponent<UnityEngine::CanvasGroup*>();
+                        }
+                        break;
                     }
-                    break;
                 }
             }
+            if (!group) {
+                return;
+            }
+            group->alpha = visible ? 1.0f : 0.0f;
+            group->blocksRaycasts = visible;
+            group->interactable = visible;
+        } catch (...) {
+            Logger.warn("Could not change the visibility");
         }
-        if (!group) {
-            Logger.warn("List controller not found");
-            return;
-        }
-        group->alpha = visible ? 1.0f : 0.0f;
-        group->blocksRaycasts = visible;
-        group->interactable = visible;
-      } catch (...) {
-        Logger.warn("SetListVisible failed");
-      }
+    }
+}
+
+namespace Panel {
+    void SetListVisible(bool visible) {
+        SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
+        SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {

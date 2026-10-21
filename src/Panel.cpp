@@ -4,12 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelCollectionViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
-#include "GlobalNamespace/LevelPackDetailViewController.hpp"
-#include "GlobalNamespace/LevelSearchViewController.hpp"
-#include "GlobalNamespace/StandardLevelDetailViewController.hpp"
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/GameObject.hpp"
@@ -29,6 +25,10 @@ namespace {
     constexpr float PanelWidth = 80.0f;
     constexpr float PanelHeight = 62.0f;
     constexpr float ListHeight = 40.0f;
+    constexpr float SlotWidth = 95.0f;
+    constexpr float SlotHeight = 10.0f;
+    constexpr float SlotCenter = 17.0f;
+    constexpr float PanelTop = 12.0f;
 
     constexpr std::array<char const*, 14> SampleNames = {
         "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
@@ -78,7 +78,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     rootRect->anchorMax = {0.5f, 1.0f};
     rootRect->pivot = {0.5f, 1.0f};
     rootRect->sizeDelta = {PanelWidth, PanelHeight};
-    rootRect->anchoredPosition = {0.0f, 0.0f};
+    rootRect->anchoredPosition = {-SlotCenter, -PanelTop};
     root->spacing = 1.5f;
     root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
     root->childControlWidth = true;
@@ -94,9 +94,16 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
     Sized(list->transform, root->transform, ListHeight);
     for (auto name : SampleNames) {
-        BSML::Lite::CreateToggle(list->transform, name, true, [name](bool value) {
+        auto toggle = BSML::Lite::CreateToggle(list->transform, name, true, [name](bool value) {
             Logger.info("{} {}", name, value);
         });
+        auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
+        if (!element) {
+            element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        }
+        element->minWidth = PanelWidth - 14.0f;
+        element->preferredWidth = PanelWidth - 14.0f;
+        element->flexibleWidth = 0.0f;
     }
 
     auto footer = Row(root->transform, 8.0f);
@@ -105,56 +112,12 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     BSML::Lite::CreateUIButton(footer->transform, "Apply", [] { Logger.info("Apply"); });
 }
 
-namespace {
-    std::string PathOf(UnityEngine::Transform* transform) {
-        std::string path;
-        int depth = 0;
-        for (auto current = transform; current && depth < 8; current = current->parent.ptr(), depth++) {
-            path = std::string(current->gameObject->name) + (path.empty() ? "" : "/") + path;
-        }
-        return path;
-    }
-
-    template <typename T>
-    void DumpType(char const* label) {
-      try {
-        auto all = UnityEngine::Resources::FindObjectsOfTypeAll<T*>();
-        for (auto item : all) {
-            if (!item) {
-                continue;
-            }
-            auto rect = item->template GetComponent<UnityEngine::RectTransform*>();
-            auto group = item->template GetComponent<UnityEngine::CanvasGroup*>();
-            Logger.info(
-                "{} active {} alpha {} size {} {} pos {} {} path {}", label, item->gameObject->activeInHierarchy,
-                group ? group->alpha : -1.0f, rect ? rect->rect.width : 0.0f, rect ? rect->rect.height : 0.0f,
-                rect ? rect->localPosition.x : 0.0f, rect ? rect->localPosition.y : 0.0f, PathOf(item->transform)
-            );
-        }
-      } catch (std::exception const& e) {
-        Logger.warn("Dump {} failed: {}", label, e.what());
-      } catch (...) {
-        Logger.warn("Dump {} failed", label);
-      }
-    }
-}
-
 namespace Panel {
-    void Dump(int category) {
-        Logger.info("---- category {}", category);
-        DumpType<GlobalNamespace::LevelCollectionNavigationController>("collectionNav");
-        DumpType<GlobalNamespace::LevelCollectionViewController>("collectionList");
-        DumpType<GlobalNamespace::LevelPackDetailViewController>("packDetail");
-        DumpType<GlobalNamespace::StandardLevelDetailViewController>("levelDetail");
-        DumpType<GlobalNamespace::LevelSearchViewController>("search");
-        DumpType<HidePacks::PanelViewController>("panel");
-    }
-
     void SetListVisible(bool visible) {
       try {
         static UnityW<UnityEngine::CanvasGroup> group;
         if (!group) {
-            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionNavigationController*>();
+            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionViewController*>();
             for (auto navigation : all) {
                 if (navigation && navigation->gameObject->activeInHierarchy) {
                     auto object = navigation->gameObject;
@@ -182,6 +145,11 @@ namespace Panel {
         static UnityW<HidePacks::PanelViewController> panel;
         if (!panel) {
             panel = BSML::Helpers::CreateViewController<HidePacks::PanelViewController*>();
+            auto rect = panel->GetComponent<UnityEngine::RectTransform*>();
+            rect->anchorMin = {0.5f, 0.5f};
+            rect->anchorMax = {0.5f, 0.5f};
+            rect->pivot = {0.5f, 0.5f};
+            rect->sizeDelta = {SlotWidth, SlotHeight};
         }
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);

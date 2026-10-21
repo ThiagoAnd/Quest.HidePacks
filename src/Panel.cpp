@@ -13,6 +13,7 @@
 #include "HMUI/Touchable.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/Bounds.hpp"
+#include "UnityEngine/Canvas.hpp"
 #include "UnityEngine/Collider.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Resources.hpp"
@@ -79,6 +80,18 @@ namespace {
             }
             if (!probeFooter) {
                 return;
+            }
+            auto canvas = probeFooter->GetComponentInParent<UnityEngine::Canvas*>();
+            if (canvas) {
+                auto canvasRect = canvas->GetComponent<UnityEngine::RectTransform*>();
+                auto size = canvasRect->rect;
+                Logger.info("Canvas {} rect x {} to {} y {} to {}", PathOf(canvas->transform), size.xMin, size.xMax, size.yMin, size.yMax);
+                for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
+                    auto local = canvasRect->InverseTransformPoint(button->transform->position);
+                    Logger.info("Button local {} {} {}", local.x, local.y, local.z);
+                }
+                auto listLocal = canvasRect->InverseTransformPoint(probeList->position);
+                Logger.info("List local {} {} {}", listLocal.x, listLocal.y, listLocal.z);
             }
             auto all = UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::UI::Graphic*>();
             for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {

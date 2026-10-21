@@ -3,7 +3,6 @@
 
 #include <string>
 
-#include "UnityEngine/EventSystems/PointerEventData.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Transform.hpp"
 #include "UnityEngine/UI/Button.hpp"
@@ -21,27 +20,19 @@ namespace {
         return path;
     }
 
-    std::string Describe(UnityEngine::EventSystems::PointerEventData* data) {
-        if (!data) {
-            return "none";
-        }
-        auto hit = data->pointerCurrentRaycast.get_gameObject();
-        return hit ? PathOf(hit->transform) : "nothing";
-    }
 }
 
 MAKE_LATE_HOOK_MATCH(
-    Selectable_OnPointerEnter,
-    &UnityEngine::UI::Selectable::OnPointerEnter,
+    Selectable_Evaluate,
+    &UnityEngine::UI::Selectable::EvaluateAndTransitionToSelectionState,
     void,
-    UnityEngine::UI::Selectable* self,
-    UnityEngine::EventSystems::PointerEventData* data
+    UnityEngine::UI::Selectable* self
 ) {
-    Selectable_OnPointerEnter(self, data);
+    Selectable_Evaluate(self);
     try {
         auto path = PathOf(self->transform);
         if (path.find("PanelViewController") != std::string::npos) {
-            Logger.info("Enter {} hit {}", path, Describe(data));
+            Logger.info("State {}", path);
         }
     } catch (std::exception const& e) {
         Logger.warn("Trace failed: {}", e.what());
@@ -49,15 +40,14 @@ MAKE_LATE_HOOK_MATCH(
 }
 
 MAKE_LATE_HOOK_MATCH(
-    Button_OnPointerClick,
-    &UnityEngine::UI::Button::OnPointerClick,
+    Button_Press,
+    &UnityEngine::UI::Button::Press,
     void,
-    UnityEngine::UI::Button* self,
-    UnityEngine::EventSystems::PointerEventData* data
+    UnityEngine::UI::Button* self
 ) {
-    Button_OnPointerClick(self, data);
+    Button_Press(self);
     try {
-        Logger.info("Click {} hit {}", PathOf(self->transform), Describe(data));
+        Logger.info("Press {}", PathOf(self->transform));
     } catch (std::exception const& e) {
         Logger.warn("Trace failed: {}", e.what());
     }

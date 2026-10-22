@@ -184,6 +184,9 @@ namespace {
         auto root = Fill(pane, 0.0f);
         auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
         auto listElement = Sized(list->transform, root->transform, PaneHeight);
+        listElement->minWidth = ListWidth;
+        listElement->preferredWidth = ListWidth;
+        listElement->flexibleWidth = 1.0f;
         auto catcherObject = UnityEngine::GameObject::New_ctor("ScrollCatcher");
         auto catcherRect = catcherObject->AddComponent<UnityEngine::RectTransform*>();
         auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();

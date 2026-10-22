@@ -33,7 +33,7 @@
 DEFINE_TYPE(HidePacks, PanelViewController);
 
 namespace {
-    constexpr float PanelWidth = 80.0f;
+    constexpr float PanelWidth = 85.0f;
     constexpr float PanelHeight = 62.0f;
     constexpr float ListHeight = 40.0f;
     constexpr float SlotWidth = 95.0f;
@@ -183,12 +183,12 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->anchorMin = {0.5f, 1.0f};
     headerRect->anchorMax = {0.5f, 1.0f};
     headerRect->pivot = {0.5f, 1.0f};
-    headerRect->sizeDelta = {SlotWidth, HeaderHeight};
+    headerRect->sizeDelta = {PanelWidth, HeaderHeight};
     headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
     headerGroup->childForceExpandWidth = true;
     MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); });
-    MakeButton(headerGroup->transform, "None", "PracticeButton", HeaderHeight, [] { Logger.info("None"); });
-    MakeButton(headerGroup->transform, "Invert", "PracticeButton", HeaderHeight, [] { Logger.info("Invert"); });
+    MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Logger.info("Only DLC"); });
+    MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); });
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
@@ -196,7 +196,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     rootRect->anchorMax = {0.5f, 1.0f};
     rootRect->pivot = {0.5f, 1.0f};
     rootRect->sizeDelta = {PanelWidth, PanelHeight};
-    rootRect->anchoredPosition = {-SlotCenter, -PanelTop - CanvasLift};
+    rootRect->anchoredPosition = {0.0f, -PanelTop - CanvasLift};
     root->spacing = 1.5f;
     root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
     root->childControlWidth = true;

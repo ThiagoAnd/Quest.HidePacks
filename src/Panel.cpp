@@ -129,16 +129,12 @@ namespace {
         SyncToggles();
     }
 
-    void Select(std::function<bool(Entry const&)> visible) {
-        blocked = false;
-        for (auto const& entry : entries) {
-            if (visible(entry)) {
-                pending.erase(entry.id);
-            } else {
-                pending.insert(entry.id);
+    void ShowRows(bool onlyDlc) {
+        for (size_t i = 0; i < rowStates.size() && i < entries.size(); i++) {
+            if (rowStates[i].transform) {
+                rowStates[i].transform->gameObject->SetActive(!onlyDlc || entries[i].dlc);
             }
         }
-        SyncToggles();
     }
 
     void Apply() {
@@ -221,8 +217,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
     headerGroup->childForceExpandWidth = false;
     headerGroup->spacing = HeaderGap;
-    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Select([](Entry const&) { return true; }); }), HeaderButton);
-    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Select([](Entry const& entry) { return entry.dlc; }); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { ShowRows(false); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { ShowRows(true); }), HeaderButton);
     Width(MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); }), HeaderButton);
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
@@ -404,6 +400,7 @@ namespace Panel {
 
     void LoadEntries(GlobalNamespace::LevelFilteringNavigationController* navigation) {
         std::vector<Entry> found;
+        int missing = 0;
         try {
             auto packs = navigation->_allOfficialBeatmapLevelPacks;
             if (packs) {
@@ -416,6 +413,12 @@ namespace Panel {
                     entry.name = static_cast<std::string>(pack->packName);
                     entry.dlc = !IsBase(entry.id);
                     entry.cover = pack->coverImage;
+            if (!entry.cover) {
+                entry.cover = pack->smallCoverImage;
+            }
+            if (!entry.cover) {
+                missing++;
+            }
                     found.push_back(std::move(entry));
                 }
             }
@@ -425,7 +428,7 @@ namespace Panel {
         if (!found.empty()) {
             entries = std::move(found);
         }
-        Logger.info("Panel has {} packs", entries.size());
+        Logger.info("Panel has {} packs, {} without cover", entries.size(), missing);
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {
@@ -442,6 +445,7 @@ namespace Panel {
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);
         Reset();
+        ShowRows(false);
     }
 }
 

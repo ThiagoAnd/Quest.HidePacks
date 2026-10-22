@@ -127,7 +127,11 @@ MAKE_LATE_HOOK_MATCH(
     Category category
 ) {
     if (IsOurs(category.value__)) {
-        Panel::Show(self);
+        try {
+            Panel::Show(self);
+        } catch (std::exception const& e) {
+            Logger.warn("Could not show the panel: {}", e.what());
+        }
         if (self->_annotatedBeatmapLevelCollectionsViewController) {
             self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(false);
         }

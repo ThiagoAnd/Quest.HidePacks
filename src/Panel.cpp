@@ -68,7 +68,14 @@ namespace {
     }
 
     UnityEngine::UI::Button* MakeButton(UnityEngine::Transform* parent, char const* text, std::string_view style, float height, std::function<void()> onClick) {
-        auto button = BSML::Lite::CreateUIButton(parent, text, style, {0.0f, 0.0f}, {0.0f, 0.0f}, std::move(onClick));
+        auto guarded = [text = std::string(text), onClick = std::move(onClick)] {
+            try {
+                onClick();
+            } catch (std::exception const& e) {
+                Logger.warn("Button {} failed: {}", text, e.what());
+            }
+        };
+        auto button = BSML::Lite::CreateUIButton(parent, text, style, {0.0f, 0.0f}, {0.0f, 0.0f}, std::move(guarded));
         if (!button) {
             return button;
         }
@@ -145,7 +152,11 @@ namespace {
         size->minHeight = CoverSize;
         size->preferredHeight = CoverSize;
         auto toggle = BSML::Lite::CreateToggle(line->transform, entry.name, PackState::IsVisible(id), [id](bool visible) {
-            PackState::OnSwitch(id, visible);
+            try {
+                PackState::OnSwitch(id, visible);
+            } catch (std::exception const& e) {
+                Logger.warn("Switch {} failed: {}", id, e.what());
+            }
         });
         PackState::AddToggle(toggle);
         auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
@@ -188,59 +199,63 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     if (!firstActivation) {
         return;
     }
-    gameObject->AddComponent<HMUI::Touchable*>();
+    try {
+        gameObject->AddComponent<HMUI::Touchable*>();
 
-    auto headerGroup = Row(transform, HeaderHeight);
-    auto headerRect = headerGroup->GetComponent<UnityEngine::RectTransform*>();
-    headerRect->anchorMin = {0.5f, 1.0f};
-    headerRect->anchorMax = {0.5f, 1.0f};
-    headerRect->pivot = {0.5f, 1.0f};
-    headerRect->sizeDelta = {PanelWidth, HeaderHeight};
-    headerRect->anchoredPosition = {0.0f, -CanvasLift};
-    headerGroup->childForceExpandWidth = false;
-    headerGroup->spacing = HeaderGap;
-    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { PackState::FilterRows(false); }), HeaderButton);
-    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { PackState::FilterRows(true); }), HeaderButton);
+        auto headerGroup = Row(transform, HeaderHeight);
+        auto headerRect = headerGroup->GetComponent<UnityEngine::RectTransform*>();
+        headerRect->anchorMin = {0.5f, 1.0f};
+        headerRect->anchorMax = {0.5f, 1.0f};
+        headerRect->pivot = {0.5f, 1.0f};
+        headerRect->sizeDelta = {PanelWidth, HeaderHeight};
+        headerRect->anchoredPosition = {0.0f, -CanvasLift};
+        headerGroup->childForceExpandWidth = false;
+        headerGroup->spacing = HeaderGap;
+        Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { PackState::FilterRows(false); }), HeaderButton);
+        Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { PackState::FilterRows(true); }), HeaderButton);
 
-    auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
-    auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
-    rootRect->anchorMin = {0.5f, 1.0f};
-    rootRect->anchorMax = {0.5f, 1.0f};
-    rootRect->pivot = {0.5f, 1.0f};
-    rootRect->sizeDelta = {PanelWidth, PanelHeight};
-    rootRect->anchoredPosition = {0.0f, -PanelTop - CanvasLift};
-    root->spacing = 1.5f;
-    root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
-    root->childControlWidth = true;
-    root->childControlHeight = true;
-    root->childForceExpandWidth = true;
-    root->childForceExpandHeight = false;
+        auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
+        auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
+        rootRect->anchorMin = {0.5f, 1.0f};
+        rootRect->anchorMax = {0.5f, 1.0f};
+        rootRect->pivot = {0.5f, 1.0f};
+        rootRect->sizeDelta = {PanelWidth, PanelHeight};
+        rootRect->anchoredPosition = {0.0f, -PanelTop - CanvasLift};
+        root->spacing = 1.5f;
+        root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
+        root->childControlWidth = true;
+        root->childControlHeight = true;
+        root->childForceExpandWidth = true;
+        root->childForceExpandHeight = false;
 
-    auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
-    auto listElement = Sized(list->transform, root->transform, ListHeight);
-    auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
-    AddScrollCatcher(scroll ? scroll->transform : listElement->gameObject->transform);
+        auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
+        auto listElement = Sized(list->transform, root->transform, ListHeight);
+        auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
+        AddScrollCatcher(scroll ? scroll->transform : listElement->gameObject->transform);
 
-    listContent = list->transform;
-    BuildRows(list->transform);
+        listContent = list->transform;
+        BuildRows(list->transform);
 
-    auto footer = Row(root->transform, ButtonHeight);
-    footer->spacing = FooterGap;
-    auto counter = BSML::Lite::CreateText(footer->transform, "", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f});
-    PackState::BindCounter(counter);
-    Width(counter, FooterText);
-    Width(MakeButton(footer->transform, "Reset", "PracticeButton", ButtonHeight, [] { PackState::ShowAll(); }), FooterButton);
-    Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { PackState::Reset(); }), FooterButton);
-    auto apply = MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { PackState::Apply(); });
-    PackState::BindApply(apply);
-    Width(apply, FooterButton);
-    PackState::Refresh();
+        auto footer = Row(root->transform, ButtonHeight);
+        footer->spacing = FooterGap;
+        auto counter = BSML::Lite::CreateText(footer->transform, "", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f});
+        PackState::BindCounter(counter);
+        Width(counter, FooterText);
+        Width(MakeButton(footer->transform, "Reset", "PracticeButton", ButtonHeight, [] { PackState::ShowAll(); }), FooterButton);
+        Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { PackState::Reset(); }), FooterButton);
+        auto apply = MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { PackState::Apply(); });
+        PackState::BindApply(apply);
+        Width(apply, FooterButton);
+        PackState::Refresh();
 
-    if (scroll) {
-        auto viewportTransform = scroll->transform->Find("Viewport");
-        if (viewportTransform) {
-            viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
+        if (scroll) {
+            auto viewportTransform = scroll->transform->Find("Viewport");
+            if (viewportTransform) {
+                viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
+            }
         }
+    } catch (std::exception const& e) {
+        Logger.warn("Could not build the panel: {}", e.what());
     }
 }
 
@@ -267,31 +282,35 @@ namespace Panel {
 }
 
 void HidePacks::PanelViewController::Update() {
-    PackState::Tick();
-    Panel::KeepListHidden();
-    if (!viewportRect) {
-        return;
-    }
-    auto bounds = viewportRect->rect;
-    for (auto& row : rowStates) {
-        if (!row.transform) {
-            continue;
+    try {
+        PackState::Tick();
+        Panel::KeepListHidden();
+        if (!viewportRect) {
+            return;
         }
-        auto center = viewportRect->InverseTransformPoint(row.transform->position);
-        bool inside = center.y >= bounds.yMin && center.y <= bounds.yMax;
-        if (inside == row.inside && !row.graphics.empty()) {
-            continue;
-        }
-        row.inside = inside;
-        if (row.graphics.empty()) {
-            for (auto graphic : row.transform->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-                row.graphics.push_back(graphic);
+        auto bounds = viewportRect->rect;
+        for (auto& row : rowStates) {
+            if (!row.transform) {
+                continue;
+            }
+            auto center = viewportRect->InverseTransformPoint(row.transform->position);
+            bool inside = center.y >= bounds.yMin && center.y <= bounds.yMax;
+            if (inside == row.inside && !row.graphics.empty()) {
+                continue;
+            }
+            row.inside = inside;
+            if (row.graphics.empty()) {
+                for (auto graphic : row.transform->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+                    row.graphics.push_back(graphic);
+                }
+            }
+            for (auto graphic : row.graphics) {
+                if (graphic) {
+                    graphic->raycastTarget = inside;
+                }
             }
         }
-        for (auto graphic : row.graphics) {
-            if (graphic) {
-                graphic->raycastTarget = inside;
-            }
-        }
+    } catch (std::exception const& e) {
+        Logger.warn("Panel update failed: {}", e.what());
     }
 }

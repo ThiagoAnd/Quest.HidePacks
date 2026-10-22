@@ -68,8 +68,8 @@ namespace PackState {
                         continue;
                     }
                     Entry entry;
-                    entry.id = static_cast<std::string>(pack->packID);
-                    entry.name = static_cast<std::string>(pack->packName);
+                    entry.id = Text(pack->packID);
+                    entry.name = Text(pack->packName);
                     entry.dlc = !IsBase(entry.id);
                     entry.cover = pack->coverImage;
                     if (!entry.cover) {

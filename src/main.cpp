@@ -26,7 +26,7 @@ MOD_EXPORT_FUNC void load() {
 }
 
 MOD_EXPORT_FUNC void late_load() {
-    Logger.info("===== HidePacks {} starting on Beat Saber {} =====", VERSION, static_cast<std::string>(UnityEngine::Application::get_version()));
+    Logger.info("===== HidePacks {} starting on Beat Saber {} =====", VERSION, Text(UnityEngine::Application::get_version()));
     Config::Load();
     custom_types::Register::AutoRegister();
     auto lateHookCount = LATE_HOOK_COUNT;

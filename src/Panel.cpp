@@ -56,7 +56,7 @@ namespace {
     constexpr float HeaderHeight = 9.6f;
     constexpr float HeaderLift = 0.0f;
     constexpr float HeaderGap = 5.0f;
-    constexpr float HeaderButton = (PanelWidth - 2.0f * HeaderGap) / 3.0f;
+    constexpr float HeaderButton = (PanelWidth - HeaderGap) / 2.0f;
     constexpr float FooterGap = 2.5f;
     constexpr float FooterButton = 18.0f;
     constexpr float FooterText = PanelWidth - 3.0f * FooterButton - 3.0f * FooterGap;
@@ -227,7 +227,6 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerGroup->spacing = HeaderGap;
     Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { ShowRows(false); }), HeaderButton);
     Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { ShowRows(true); }), HeaderButton);
-    Width(MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); }), HeaderButton);
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();

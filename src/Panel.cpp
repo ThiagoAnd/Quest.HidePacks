@@ -29,6 +29,8 @@
 #include "UnityEngine/UI/LayoutRebuilder.hpp"
 #include "UnityEngine/UI/VerticalLayoutGroup.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
+#include "bsml/shared/BSML/Components/Backgroundable.hpp"
+#include "UnityEngine/RectOffset.hpp"
 #include "bsml/shared/Helpers/creation.hpp"
 #include "logger.hpp"
 
@@ -41,10 +43,11 @@ namespace {
     constexpr float CanvasHeight = 120.0f;
     constexpr float PanelTop = 12.0f;
     constexpr float PaneHeight = 56.0f;
+    constexpr float HeaderHeight = 7.0f;
     constexpr float PaneCenterY = -(PanelTop - SlotHeight / 2.0f) - PaneHeight / 2.0f;
     constexpr float ListWidth = 75.0f;
     constexpr float ListX = -54.0f;
-    constexpr float SideWidth = 70.0f;
+    constexpr float SideWidth = 58.0f;
     constexpr float SideX = 22.5f;
     constexpr float ToggleWidth = 53.0f;
     constexpr float CoverSize = 6.0f;
@@ -182,8 +185,22 @@ namespace {
 
     void BuildList(UnityEngine::Transform* pane) {
         auto root = Fill(pane, 0.0f);
+        auto header = BSML::Lite::CreateHorizontalLayoutGroup(root->transform);
+        header->childAlignment = UnityEngine::TextAnchor::MiddleCenter;
+        header->childControlWidth = true;
+        header->childControlHeight = true;
+        header->childForceExpandWidth = true;
+        auto headerSize = header->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        headerSize->minHeight = HeaderHeight;
+        headerSize->preferredHeight = HeaderHeight;
+        auto headerBackground = header->gameObject->AddComponent<BSML::Backgroundable*>();
+        if (headerBackground) {
+            headerBackground->ApplyBackground("panel-top");
+        }
+        auto headerText = BSML::Lite::CreateText(header->transform, "Hide Packs", 4.0f, {0.0f, 0.0f}, {ListWidth, HeaderHeight});
+        headerText->set_alignment(TMPro::TextAlignmentOptions::Center);
         auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
-        auto listElement = Sized(list->transform, root->transform, PaneHeight);
+        auto listElement = Sized(list->transform, root->transform, PaneHeight - HeaderHeight);
         listElement->minWidth = ListWidth;
         listElement->preferredWidth = ListWidth;
         listElement->flexibleWidth = 1.0f;
@@ -272,9 +289,11 @@ namespace {
         constexpr float Compact = 7.0f;
         constexpr float CoverBig = 14.0f;
         auto root = Fill(pane, 1.5f);
-        auto title = BSML::Lite::CreateText(root->transform, "Hide Packs", 5.0f, {0.0f, 0.0f}, {SideWidth, 7.0f});
-        title->set_alignment(TMPro::TextAlignmentOptions::Center);
-        Sized(title->transform, root->transform, 7.0f);
+        root->set_padding(UnityEngine::RectOffset::New_ctor(2, 2, 2, 2));
+        auto background = root->gameObject->AddComponent<BSML::Backgroundable*>();
+        if (background) {
+            background->ApplyBackground("round-rect-panel");
+        }
 
         auto detail = Row(root->transform, CoverBig);
         detail->spacing = 3.0f;
@@ -296,22 +315,22 @@ namespace {
         texts->childForceExpandWidth = true;
         texts->childForceExpandHeight = false;
         auto textsSize = texts->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
-        textsSize->minWidth = SideWidth - CoverBig - 6.0f;
-        textsSize->preferredWidth = SideWidth - CoverBig - 6.0f;
-        detailName = BSML::Lite::CreateText(texts->transform, "", 3.8f, {0.0f, 0.0f}, {SideWidth - CoverBig - 6.0f, 6.0f});
+        textsSize->minWidth = SideWidth - CoverBig - 7.0f;
+        textsSize->preferredWidth = SideWidth - CoverBig - 7.0f;
+        detailName = BSML::Lite::CreateText(texts->transform, "", 3.8f, {0.0f, 0.0f}, {SideWidth - CoverBig - 7.0f, 6.0f});
         detailName->set_alignment(TMPro::TextAlignmentOptions::Left);
         detailName->set_enableWordWrapping(false);
         detailName->set_overflowMode(TMPro::TextOverflowModes::Ellipsis);
         Sized(detailName->transform, texts->transform, 6.0f);
-        detailInfo = BSML::Lite::CreateText(texts->transform, "", 3.0f, {0.0f, 0.0f}, {SideWidth - CoverBig - 6.0f, 5.0f});
+        detailInfo = BSML::Lite::CreateText(texts->transform, "", 3.0f, {0.0f, 0.0f}, {SideWidth - CoverBig - 7.0f, 5.0f});
         detailInfo->set_alignment(TMPro::TextAlignmentOptions::Left);
         detailInfo->set_enableWordWrapping(false);
         Sized(detailInfo->transform, texts->transform, 5.0f);
 
         auto kinds = ButtonRow(root->transform, Compact);
-        MakeButton(kinds->transform, "Only OST", "PracticeButton", Compact, [] { Logger.info("Only OST"); });
-        MakeButton(kinds->transform, "Only DLC", "PracticeButton", Compact, [] { Logger.info("Only DLC"); });
-        MakeButton(kinds->transform, "Only Custom", "PracticeButton", Compact, [] { Logger.info("Only Custom"); });
+        MakeButton(kinds->transform, "OST", "PracticeButton", Compact, [] { Logger.info("OST"); });
+        MakeButton(kinds->transform, "DLC", "PracticeButton", Compact, [] { Logger.info("DLC"); });
+        MakeButton(kinds->transform, "Custom", "PracticeButton", Compact, [] { Logger.info("Custom"); });
 
         auto selection = ButtonRow(root->transform, Compact);
         MakeButton(selection->transform, "All", "PracticeButton", Compact, [] { Logger.info("All"); });

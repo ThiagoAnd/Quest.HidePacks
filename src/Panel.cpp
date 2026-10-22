@@ -24,6 +24,7 @@
 #include "UnityEngine/UI/Button.hpp"
 #include "UnityEngine/UI/Graphic.hpp"
 #include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
+#include "UnityEngine/UI/ContentSizeFitter.hpp"
 #include "UnityEngine/UI/Image.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
 #include "UnityEngine/UI/LayoutRebuilder.hpp"
@@ -174,6 +175,11 @@ namespace {
         rect->anchorMax = {1.0f, 1.0f};
         rect->offsetMin = {0.0f, 0.0f};
         rect->offsetMax = {0.0f, 0.0f};
+        auto fitter = root->GetComponent<UnityEngine::UI::ContentSizeFitter*>();
+        if (fitter) {
+            fitter->horizontalFit = UnityEngine::UI::ContentSizeFitter::FitMode::Unconstrained;
+            fitter->verticalFit = UnityEngine::UI::ContentSizeFitter::FitMode::Unconstrained;
+        }
         root->spacing = spacing;
         root->childAlignment = UnityEngine::TextAnchor::UpperCenter;
         root->childControlWidth = true;
@@ -195,7 +201,7 @@ namespace {
         headerSize->preferredHeight = HeaderHeight;
         auto headerBackground = header->gameObject->AddComponent<BSML::Backgroundable*>();
         if (headerBackground) {
-            headerBackground->ApplyBackground("panel-top");
+            headerBackground->ApplyBackground("title-gradient");
         }
         auto headerText = BSML::Lite::CreateText(header->transform, "Hide Packs", 4.0f, {0.0f, 0.0f}, {ListWidth, HeaderHeight});
         headerText->set_alignment(TMPro::TextAlignmentOptions::Center);
@@ -230,13 +236,21 @@ namespace {
             auto cover = UnityEngine::GameObject::New_ctor("Cover");
             cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
             auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-            picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+            picture->color = {0.08f, 0.25f, 0.55f, 1.0f};
             auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
             size->minWidth = CoverSize;
             size->preferredWidth = CoverSize;
             size->minHeight = CoverSize;
             size->preferredHeight = CoverSize;
-            auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name, index](bool value) {
+            auto label = BSML::Lite::CreateText(line->transform, name, 3.2f, {0.0f, 0.0f}, {ListWidth - 26.0f, 6.0f});
+            label->set_alignment(TMPro::TextAlignmentOptions::Left);
+            label->set_enableWordWrapping(false);
+            label->set_overflowMode(TMPro::TextOverflowModes::Ellipsis);
+            auto labelSize = label->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+            labelSize->flexibleWidth = 1.0f;
+            labelSize->minHeight = 6.0f;
+            labelSize->preferredHeight = 6.0f;
+            auto toggle = BSML::Lite::CreateToggle(line->transform, "", true, [name, index](bool value) {
                 Logger.info("{} {}", name, value);
                 visibleState[index] = value;
                 selected = index;
@@ -246,8 +260,8 @@ namespace {
             if (!element) {
                 element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
             }
-            element->minWidth = ToggleWidth;
-            element->preferredWidth = ToggleWidth;
+            element->minWidth = 10.0f;
+            element->preferredWidth = 10.0f;
             element->flexibleWidth = 0.0f;
         }
         for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
@@ -301,7 +315,7 @@ namespace {
         auto cover = UnityEngine::GameObject::New_ctor("DetailCover");
         cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(detail->transform, false);
         auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-        picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        picture->color = {0.08f, 0.25f, 0.55f, 1.0f};
         auto coverSize = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
         coverSize->minWidth = CoverBig;
         coverSize->preferredWidth = CoverBig;

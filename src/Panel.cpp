@@ -176,67 +176,6 @@ namespace {
         return root;
     }
 
-    void BuildList(UnityEngine::Transform* pane) {
-        auto root = Fill(pane, 0.0f);
-        auto list = BSML::Lite::CreateScrollableSettingsContainer(root->transform);
-        auto listElement = Sized(list->transform, root->transform, PaneHeight);
-        auto catcherObject = UnityEngine::GameObject::New_ctor("ScrollCatcher");
-        auto catcherRect = catcherObject->AddComponent<UnityEngine::RectTransform*>();
-        auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
-        catcherRect->SetParent(scroll ? scroll->transform : listElement->transform, false);
-        catcherRect->anchorMin = {0.0f, 0.0f};
-        catcherRect->anchorMax = {1.0f, 1.0f};
-        catcherRect->offsetMin = {0.0f, 0.0f};
-        catcherRect->offsetMax = {0.0f, 0.0f};
-        catcherRect->SetAsFirstSibling();
-        auto catcherLayout = catcherObject->AddComponent<UnityEngine::UI::LayoutElement*>();
-        if (catcherLayout) {
-            catcherLayout->ignoreLayout = true;
-        }
-        auto catcher = catcherObject->AddComponent<UnityEngine::UI::Image*>();
-        if (catcher) {
-            catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
-            catcher->raycastTarget = true;
-        }
-        for (int index = 0; index < static_cast<int>(SampleNames.size()); index++) {
-            auto name = SampleNames[index];
-            auto line = Row(list->transform, CoverSize + 1.0f);
-            rowStates.push_back({line->transform, {}, true});
-            line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
-            auto cover = UnityEngine::GameObject::New_ctor("Cover");
-            cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
-            auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-            picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
-            auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
-            size->minWidth = CoverSize;
-            size->preferredWidth = CoverSize;
-            size->minHeight = CoverSize;
-            size->preferredHeight = CoverSize;
-            auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name, index](bool value) {
-                Logger.info("{} {}", name, value);
-                visibleState[index] = value;
-                selected = index;
-                Refresh();
-            });
-            auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
-            if (!element) {
-                element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
-            }
-            element->minWidth = ToggleWidth;
-            element->preferredWidth = ToggleWidth;
-            element->flexibleWidth = 0.0f;
-        }
-        for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-            graphic->raycastTarget = true;
-        }
-        if (scroll) {
-            auto viewportTransform = scroll->transform->Find("Viewport");
-            if (viewportTransform) {
-                viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
-            }
-        }
-    }
-
     UnityEngine::UI::HorizontalLayoutGroup* ButtonRow(UnityEngine::Transform* root, float height) {
         auto row = Row(root, height);
         row->childForceExpandWidth = true;
@@ -314,40 +253,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         return;
     }
     gameObject->AddComponent<HMUI::Touchable*>();
-    BuildList(MakePane(transform, ListX, ListWidth));
     BuildSide(MakePane(transform, SideX, SideWidth));
-}
-
-namespace {
-    std::vector<UnityW<UnityEngine::UI::Graphic>> muted;
-
-    void SetRaycasts(bool enabled) {
-        try {
-            if (enabled) {
-                for (auto graphic : muted) {
-                    if (graphic) {
-                        graphic->raycastTarget = true;
-                    }
-                }
-                muted.clear();
-                return;
-            }
-            for (auto navigation : UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LevelCollectionNavigationController*>()) {
-                if (!navigation || !navigation->gameObject->activeInHierarchy) {
-                    continue;
-                }
-                for (auto graphic : navigation->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-                    if (graphic && graphic->raycastTarget) {
-                        graphic->raycastTarget = false;
-                        muted.push_back(graphic);
-                    }
-                }
-                break;
-            }
-        } catch (std::exception const& e) {
-            Logger.warn("Could not mute raycasts: {}", e.what());
-        }
-    }
 }
 
 namespace {
@@ -383,10 +289,7 @@ namespace {
 namespace Panel {
     void SetListVisible(bool visible) {
         listHidden = !visible;
-        SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
-        SetVisible<GlobalNamespace::LevelCollectionNavigationController>(visible);
-        SetRaycasts(visible);
     }
 
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {
@@ -406,12 +309,7 @@ namespace Panel {
 
 void HidePacks::PanelViewController::Update() {
     if (listHidden) {
-        SetVisible<GlobalNamespace::LevelCollectionViewController>(false);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(false);
-        SetVisible<GlobalNamespace::LevelCollectionNavigationController>(false);
-        if (++hiddenTicks % 30 == 0) {
-            SetRaycasts(false);
-        }
     }
     if (!viewportRect) {
         return;

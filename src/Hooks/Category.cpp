@@ -127,10 +127,12 @@ MAKE_LATE_HOOK_MATCH(
     Category category
 ) {
     if (IsOurs(category.value__)) {
-        Panel::Show(self);
+        Category packs = 1;
+        LevelFilteringNavigationController_UpdateSecondChildControllerContent(self, packs);
         if (self->_annotatedBeatmapLevelCollectionsViewController) {
-            self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(false);
+            self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(true);
         }
+        Panel::Show(self);
         return;
     }
     Panel::SetListVisible(true);

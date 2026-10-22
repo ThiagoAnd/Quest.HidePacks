@@ -38,7 +38,7 @@ namespace Config {
             }
             Logger.info("Loaded {} hidden packs", hidden.size());
         } catch (std::exception const& e) {
-            Logger.warn("Config load failed: {}", e.what());
+            ReportError("config load failed", e);
             hidden.clear();
         }
     }
@@ -72,7 +72,7 @@ namespace Config {
             std::filesystem::rename(temp, target);
             Logger.info("Saved {} hidden packs", hidden.size());
         } catch (std::exception const& e) {
-            Logger.warn("Config save failed: {}", e.what());
+            ReportError("config save failed", e);
         }
     }
 

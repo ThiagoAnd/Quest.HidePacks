@@ -64,7 +64,7 @@ MAKE_LATE_HOOK_MATCH(
         try {
             packs = Filter(beatmapLevelPacks);
         } catch (std::exception const& e) {
-            Logger.warn("Filter failed: {}", e.what());
+            ReportError("filter failed", e);
             packs = beatmapLevelPacks;
         }
     }

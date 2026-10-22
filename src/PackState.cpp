@@ -82,7 +82,7 @@ namespace PackState {
                 }
             }
         } catch (std::exception const& e) {
-            Logger.warn("Could not read the packs: {}", e.what());
+            ReportError("could not read the packs", e);
         }
         if (!found.empty()) {
             entries = std::move(found);

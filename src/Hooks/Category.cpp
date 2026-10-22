@@ -114,7 +114,7 @@ MAKE_LATE_HOOK_MATCH(
         AddInfo(self);
         enabled = AddCategory(enabled);
     } catch (std::exception const& e) {
-        Logger.warn("Could not add the category: {}", e.what());
+        ReportError("could not add the category", e);
     }
     SelectLevelCategoryViewController_Setup(self, selected, enabled);
 }
@@ -130,7 +130,7 @@ MAKE_LATE_HOOK_MATCH(
         try {
             Panel::Show(self);
         } catch (std::exception const& e) {
-            Logger.warn("Could not show the panel: {}", e.what());
+            ReportError("could not show the panel", e);
         }
         if (self->_annotatedBeatmapLevelCollectionsViewController) {
             self->_annotatedBeatmapLevelCollectionsViewController->gameObject->SetActive(false);

@@ -41,7 +41,7 @@ namespace {
                 break;
             }
         } catch (std::exception const& e) {
-            Logger.warn("Could not mute raycasts: {}", e.what());
+            ReportError("could not mute raycasts", e);
         }
     }
 
@@ -69,7 +69,7 @@ namespace {
             group->blocksRaycasts = visible;
             group->interactable = visible;
         } catch (...) {
-            Logger.warn("Could not change the visibility");
+            Logger.error("HIDEPACKS ERROR in changing the visibility: unknown error. Please send this file when reporting it.");
         }
     }
 

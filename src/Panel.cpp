@@ -72,7 +72,7 @@ namespace {
             try {
                 onClick();
             } catch (std::exception const& e) {
-                Logger.warn("Button {} failed: {}", text, e.what());
+                ReportError("button " + text, e);
             }
         };
         auto button = BSML::Lite::CreateUIButton(parent, text, style, {0.0f, 0.0f}, {0.0f, 0.0f}, std::move(guarded));
@@ -155,7 +155,7 @@ namespace {
             try {
                 PackState::OnSwitch(id, visible);
             } catch (std::exception const& e) {
-                Logger.warn("Switch {} failed: {}", id, e.what());
+                ReportError("switch " + id, e);
             }
         });
         PackState::AddToggle(toggle);
@@ -255,7 +255,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
             }
         }
     } catch (std::exception const& e) {
-        Logger.warn("Could not build the panel: {}", e.what());
+        ReportError("could not build the panel", e);
     }
 }
 
@@ -311,6 +311,6 @@ void HidePacks::PanelViewController::Update() {
             }
         }
     } catch (std::exception const& e) {
-        Logger.warn("Panel update failed: {}", e.what());
+        ReportError("panel update failed", e);
     }
 }

@@ -188,6 +188,6 @@ MAKE_LATE_HOOK_MATCH(
     try {
         Build(self);
     } catch (std::exception const& e) {
-        Logger.warn("Pager failed: {}", e.what());
+        ReportError("pager failed", e);
     }
 }

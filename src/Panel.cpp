@@ -19,6 +19,7 @@
 #include "HMUI/Touchable.hpp"
 #include "TMPro/TextMeshProUGUI.hpp"
 #include "UnityEngine/Sprite.hpp"
+#include "UnityEngine/Time.hpp"
 #include "bsml/shared/BSML/Components/Settings/ToggleSetting.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/Bounds.hpp"
@@ -81,8 +82,12 @@ namespace {
     std::unordered_set<std::string> pending;
     std::vector<UnityW<BSML::ToggleSetting>> toggles;
     UnityW<TMPro::TextMeshProUGUI> counter;
+    UnityW<UnityEngine::UI::Button> applyButton;
     bool syncing = false;
     bool blocked = false;
+    bool messageShown = false;
+    float messageUntil = 0.0f;
+    constexpr float MessageSeconds = 3.0f;
 
     bool IsBase(std::string const& id) {
         return id.rfind("OstVol", 0) == 0 || id == "Extras" || id == "Camellia";
@@ -104,8 +109,15 @@ namespace {
         }
         int hidden = HiddenCount();
         int total = static_cast<int>(entries.size());
+        if (applyButton) {
+            applyButton->interactable = pending != Config::Hidden();
+        }
         if (blocked && hidden >= total) {
             counter->text = "Keep 1 visible";
+            return;
+        }
+        if (messageShown) {
+            counter->text = "Applied: " + std::to_string(hidden) + " hidden";
             return;
         }
         counter->text = std::to_string(hidden) + "/" + std::to_string(total) + " hidden";
@@ -128,6 +140,7 @@ namespace {
     void Reset() {
         pending = Config::Hidden();
         blocked = false;
+        messageShown = false;
         SyncToggles();
     }
 
@@ -142,6 +155,7 @@ namespace {
     void ShowAll() {
         pending.clear();
         blocked = false;
+        messageShown = false;
         SyncToggles();
     }
 
@@ -154,6 +168,8 @@ namespace {
         blocked = false;
         Config::SetHidden(pending);
         Config::Save();
+        messageShown = true;
+        messageUntil = UnityEngine::Time::get_realtimeSinceStartup() + MessageSeconds;
         UpdateCounter();
     }
 
@@ -299,6 +315,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
                 pending.insert(id);
             }
             blocked = false;
+            messageShown = false;
             UpdateCounter();
         });
         toggles.push_back(toggle);
@@ -321,7 +338,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     Width(counter, FooterText);
     Width(MakeButton(footer->transform, "Reset", "PracticeButton", ButtonHeight, [] { ShowAll(); }), FooterButton);
     Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Reset(); }), FooterButton);
-    Width(MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Apply(); }), FooterButton);
+    applyButton = MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Apply(); });
+    Width(applyButton, FooterButton);
     UpdateCounter();
     if (scroll) {
         auto viewportTransform = scroll->transform->Find("Viewport");
@@ -455,6 +473,10 @@ namespace Panel {
 }
 
 void HidePacks::PanelViewController::Update() {
+    if (messageShown && UnityEngine::Time::get_realtimeSinceStartup() >= messageUntil) {
+        messageShown = false;
+        UpdateCounter();
+    }
     if (listHidden) {
         SetVisible<GlobalNamespace::LevelCollectionViewController>(false);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(false);

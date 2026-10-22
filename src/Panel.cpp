@@ -158,6 +158,7 @@ namespace {
     }
 
     void Apply() {
+        Logger.info("Apply pressed with {} pending, {} saved", pending.size(), Config::Hidden().size());
         if (!entries.empty() && HiddenCount() >= static_cast<int>(entries.size())) {
             blocked = true;
             UpdateCounter();
@@ -307,6 +308,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
             if (syncing) {
                 return;
             }
+            Logger.info("Switch {} is now {}", id, value);
             if (value) {
                 pending.erase(id);
             } else {

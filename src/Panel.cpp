@@ -12,6 +12,7 @@
 #include "GlobalNamespace/LevelCollectionViewController.hpp"
 #include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelPackDetailViewController.hpp"
+#include "GlobalNamespace/StandardLevelDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
@@ -114,7 +115,7 @@ namespace {
         for (size_t i = 0; i < toggles.size() && i < entries.size(); i++) {
             if (toggles[i]) {
                 bool visible = !pending.contains(entries[i].id);
-                if (toggles[i]->get_Value() != visible) {
+                if (toggles[i]->toggle->isOn != visible) {
                     toggles[i]->set_Value(visible);
                 }
             }
@@ -401,6 +402,7 @@ namespace Panel {
         listHidden = !visible;
         SetVisible<GlobalNamespace::LevelCollectionViewController>(visible);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(visible);
+        SetVisible<GlobalNamespace::StandardLevelDetailViewController>(visible);
         SetVisible<GlobalNamespace::LevelCollectionNavigationController>(visible);
         SetRaycasts(visible);
     }
@@ -460,6 +462,7 @@ void HidePacks::PanelViewController::Update() {
     if (listHidden) {
         SetVisible<GlobalNamespace::LevelCollectionViewController>(false);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(false);
+        SetVisible<GlobalNamespace::StandardLevelDetailViewController>(false);
         SetVisible<GlobalNamespace::LevelCollectionNavigationController>(false);
         if (++hiddenTicks % 30 == 0) {
             SetRaycasts(false);

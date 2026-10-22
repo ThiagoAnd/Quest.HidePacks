@@ -55,9 +55,9 @@ namespace {
     constexpr float HeaderLift = 0.0f;
     constexpr float HeaderGap = 5.0f;
     constexpr float HeaderButton = (PanelWidth - 2.0f * HeaderGap) / 3.0f;
-    constexpr float FooterGap = 3.5f;
-    constexpr float FooterButton = 25.0f;
-    constexpr float FooterText = PanelWidth - 2.0f * FooterButton - 2.0f * FooterGap;
+    constexpr float FooterGap = 2.5f;
+    constexpr float FooterButton = 18.0f;
+    constexpr float FooterText = PanelWidth - 3.0f * FooterButton - 3.0f * FooterGap;
 
 
     struct RowState {
@@ -103,10 +103,10 @@ namespace {
         int hidden = HiddenCount();
         int total = static_cast<int>(entries.size());
         if (blocked && hidden >= total) {
-            counter->text = "Keep one visible";
+            counter->text = "Keep 1 visible";
             return;
         }
-        counter->text = std::to_string(hidden) + " of " + std::to_string(total) + " hidden";
+        counter->text = std::to_string(hidden) + "/" + std::to_string(total) + " hidden";
     }
 
     void SyncToggles() {
@@ -135,6 +135,12 @@ namespace {
                 rowStates[i].transform->gameObject->SetActive(!onlyDlc || entries[i].dlc);
             }
         }
+    }
+
+    void ShowAll() {
+        pending.clear();
+        blocked = false;
+        SyncToggles();
     }
 
     void Apply() {
@@ -316,6 +322,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     footer->spacing = FooterGap;
     counter = BSML::Lite::CreateText(footer->transform, "", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f});
     Width(counter, FooterText);
+    Width(MakeButton(footer->transform, "Reset", "PracticeButton", ButtonHeight, [] { ShowAll(); }), FooterButton);
     Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Reset(); }), FooterButton);
     Width(MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Apply(); }), FooterButton);
     UpdateCounter();

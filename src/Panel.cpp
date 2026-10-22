@@ -2,15 +2,22 @@
 
 #include <array>
 #include <cmath>
+#include <functional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
+#include "Config.hpp"
+#include "GlobalNamespace/BeatmapLevelPack.hpp"
 #include "GlobalNamespace/LevelCollectionViewController.hpp"
 #include "GlobalNamespace/LevelCollectionNavigationController.hpp"
 #include "GlobalNamespace/LevelPackDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
+#include "TMPro/TextMeshProUGUI.hpp"
+#include "UnityEngine/Sprite.hpp"
+#include "bsml/shared/BSML/Components/Settings/ToggleSetting.hpp"
 #include "UnityEngine/CanvasGroup.hpp"
 #include "UnityEngine/Bounds.hpp"
 #include "UnityEngine/Canvas.hpp"
@@ -62,77 +69,89 @@ namespace {
     UnityW<UnityEngine::RectTransform> viewportRect;
     bool listHidden = false;
     int hiddenTicks = 0;
-    UnityW<UnityEngine::RectTransform> probeFooter;
-    UnityW<UnityEngine::RectTransform> probeList;
-
-    std::string PathOf(UnityEngine::Transform* transform) {
-        std::string path;
-        int depth = 0;
-        while (transform && depth < 12) {
-            path = static_cast<std::string>(transform->name) + "/" + path;
-            transform = transform->parent;
-            depth++;
-        }
-        return path;
-    }
-
-    bool Near(UnityEngine::Bounds bounds, UnityEngine::Vector3 point) {
-        auto center = bounds.get_center();
-        auto extents = bounds.get_extents();
-        return std::abs(point.x - center.x) <= extents.x + 1.0f && std::abs(point.y - center.y) <= extents.y + 1.0f && std::abs(point.z - center.z) <= extents.z + 1.0f;
-    }
-
-    void Probe() {
-        try {
-            if (probeList) {
-                Logger.info("List rect {} x {} at {} {} children {}", probeList->rect.width, probeList->rect.height, probeList->anchoredPosition.x, probeList->anchoredPosition.y, probeList->childCount);
-            }
-            if (!probeFooter) {
-                return;
-            }
-            auto canvas = probeFooter->GetComponentInParent<UnityEngine::Canvas*>();
-            if (canvas) {
-                auto canvasRect = canvas->GetComponent<UnityEngine::RectTransform*>();
-                auto size = canvasRect->rect;
-                Logger.info("Canvas {} rect x {} to {} y {} to {}", PathOf(canvas->transform), size.xMin, size.xMax, size.yMin, size.yMax);
-                for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
-                    auto local = canvasRect->InverseTransformPoint(button->transform->position);
-                    Logger.info("Button local {} {} {}", local.x, local.y, local.z);
-                }
-                auto listLocal = canvasRect->InverseTransformPoint(probeList->position);
-                Logger.info("List local {} {} {}", listLocal.x, listLocal.y, listLocal.z);
-            }
-            auto all = UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::UI::Graphic*>();
-            for (auto button : probeFooter->GetComponentsInChildren<UnityEngine::UI::Button*>(true)) {
-                auto point = button->transform->position;
-                Logger.info("Under button {}", static_cast<std::string>(button->gameObject->name));
-                for (auto collider : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Collider*>()) {
-                    if (collider && collider->enabled && collider->gameObject->activeInHierarchy && Near(collider->bounds, point)) {
-                        Logger.info("  collider {}", PathOf(collider->transform));
-                    }
-                }
-                for (auto graphic : all) {
-                    if (!graphic || !graphic->raycastTarget || !graphic->gameObject->activeInHierarchy || !graphic->enabled) {
-                        continue;
-                    }
-                    auto local = graphic->rectTransform->InverseTransformPoint(point);
-                    auto rect = graphic->rectTransform->rect;
-                    if (local.x >= rect.xMin && local.x <= rect.xMax && local.y >= rect.yMin && local.y <= rect.yMax && std::abs(local.z) < 5.0f) {
-                        Logger.info("  z {} {}", local.z, PathOf(graphic->transform));
-                    }
-                }
-            }
-        } catch (std::exception const& e) {
-            Logger.warn("Probe failed: {}", e.what());
-        }
-    }
-
-    constexpr std::array<char const*, 14> SampleNames = {
-        "Original Soundtrack Vol. 1", "Original Soundtrack Vol. 2", "Original Soundtrack Vol. 3",
-        "Original Soundtrack Vol. 4", "Original Soundtrack Vol. 5", "Original Soundtrack Vol. 6",
-        "Original Soundtrack Vol. 7", "Extras", "Camellia Music Pack", "Monstercat Music Pack Vol. 1",
-        "Rocket League x Monstercat", "Green Day Music Pack", "Timbaland Music Pack", "BTS Music Pack"
+    struct Entry {
+        std::string id;
+        std::string name;
+        bool dlc = true;
+        UnityW<UnityEngine::Sprite> cover;
     };
+    std::vector<Entry> entries;
+    std::unordered_set<std::string> pending;
+    std::vector<UnityW<BSML::ToggleSetting>> toggles;
+    UnityW<TMPro::TextMeshProUGUI> counter;
+    bool syncing = false;
+    bool blocked = false;
+
+    bool IsBase(std::string const& id) {
+        return id.rfind("OstVol", 0) == 0 || id == "Extras" || id == "Camellia";
+    }
+
+    int HiddenCount() {
+        int count = 0;
+        for (auto const& entry : entries) {
+            if (pending.contains(entry.id)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    void UpdateCounter() {
+        if (!counter) {
+            return;
+        }
+        int hidden = HiddenCount();
+        int total = static_cast<int>(entries.size());
+        if (blocked && hidden >= total) {
+            counter->text = "Keep one visible";
+            return;
+        }
+        counter->text = std::to_string(hidden) + " of " + std::to_string(total) + " hidden";
+    }
+
+    void SyncToggles() {
+        syncing = true;
+        for (size_t i = 0; i < toggles.size() && i < entries.size(); i++) {
+            if (toggles[i]) {
+                bool visible = !pending.contains(entries[i].id);
+                if (toggles[i]->get_Value() != visible) {
+                    toggles[i]->set_Value(visible);
+                }
+            }
+        }
+        syncing = false;
+        UpdateCounter();
+    }
+
+    void Reset() {
+        pending = Config::Hidden();
+        blocked = false;
+        SyncToggles();
+    }
+
+    void Select(std::function<bool(Entry const&)> visible) {
+        blocked = false;
+        for (auto const& entry : entries) {
+            if (visible(entry)) {
+                pending.erase(entry.id);
+            } else {
+                pending.insert(entry.id);
+            }
+        }
+        SyncToggles();
+    }
+
+    void Apply() {
+        if (!entries.empty() && HiddenCount() >= static_cast<int>(entries.size())) {
+            blocked = true;
+            UpdateCounter();
+            return;
+        }
+        blocked = false;
+        Config::SetHidden(pending);
+        Config::Save();
+        UpdateCounter();
+    }
 
     UnityEngine::UI::LayoutElement* Sized(UnityEngine::Transform* child, UnityEngine::Transform* root, float height) {
         UnityEngine::Transform* top = child;
@@ -202,8 +221,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
     headerGroup->childForceExpandWidth = false;
     headerGroup->spacing = HeaderGap;
-    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); }), HeaderButton);
-    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Logger.info("Only DLC"); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Select([](Entry const&) { return true; }); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Select([](Entry const& entry) { return entry.dlc; }); }), HeaderButton);
     Width(MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); }), HeaderButton);
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
@@ -249,22 +268,41 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         Logger.warn("Could not add the scroll catcher");
     }
     Logger.info("Catcher size {} x {}", catcherRect->rect.width, catcherRect->rect.height);
-    for (auto name : SampleNames) {
+    toggles.clear();
+    rowStates.clear();
+    pending = Config::Hidden();
+    for (size_t i = 0; i < entries.size(); i++) {
+        std::string id = entries[i].id;
         auto line = Row(list->transform, CoverSize + 1.0f);
         rowStates.push_back({line->transform, {}, true});
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
         auto cover = UnityEngine::GameObject::New_ctor("Cover");
         cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
         auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-        picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        if (entries[i].cover) {
+            picture->sprite = entries[i].cover.ptr();
+            picture->preserveAspect = true;
+        } else {
+            picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        }
         auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
         size->minWidth = CoverSize;
         size->preferredWidth = CoverSize;
         size->minHeight = CoverSize;
         size->preferredHeight = CoverSize;
-        auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name](bool value) {
-            Logger.info("{} {}", name, value);
+        auto toggle = BSML::Lite::CreateToggle(line->transform, entries[i].name, !pending.contains(id), [id](bool value) {
+            if (syncing) {
+                return;
+            }
+            if (value) {
+                pending.erase(id);
+            } else {
+                pending.insert(id);
+            }
+            blocked = false;
+            UpdateCounter();
         });
+        toggles.push_back(toggle);
         auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!element) {
             element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
@@ -279,19 +317,18 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     }
 
     auto footer = Row(root->transform, ButtonHeight);
-    auto footerRect = footer->GetComponent<UnityEngine::RectTransform*>();
     footer->spacing = FooterGap;
-    Width(BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f}), FooterText);
-    Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); }), FooterButton);
-    Width(MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); }), FooterButton);
+    counter = BSML::Lite::CreateText(footer->transform, "", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f});
+    Width(counter, FooterText);
+    Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Reset(); }), FooterButton);
+    Width(MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Apply(); }), FooterButton);
+    UpdateCounter();
     if (scroll) {
         auto viewportTransform = scroll->transform->Find("Viewport");
         if (viewportTransform) {
             viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
         }
     }
-    probeFooter = footerRect;
-    probeList = list->GetComponent<UnityEngine::RectTransform*>();
 }
 
 namespace {
@@ -365,8 +402,35 @@ namespace Panel {
         SetRaycasts(visible);
     }
 
+    void LoadEntries(GlobalNamespace::LevelFilteringNavigationController* navigation) {
+        std::vector<Entry> found;
+        try {
+            auto packs = navigation->_allOfficialBeatmapLevelPacks;
+            if (packs) {
+                for (auto pack : packs) {
+                    if (!pack) {
+                        continue;
+                    }
+                    Entry entry;
+                    entry.id = static_cast<std::string>(pack->packID);
+                    entry.name = static_cast<std::string>(pack->packName);
+                    entry.dlc = !IsBase(entry.id);
+                    entry.cover = pack->coverImage;
+                    found.push_back(std::move(entry));
+                }
+            }
+        } catch (std::exception const& e) {
+            Logger.warn("Could not read the packs: {}", e.what());
+        }
+        if (!found.empty()) {
+            entries = std::move(found);
+        }
+        Logger.info("Panel has {} packs", entries.size());
+    }
+
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation) {
         static UnityW<HidePacks::PanelViewController> panel;
+        LoadEntries(navigation);
         if (!panel) {
             panel = BSML::Helpers::CreateViewController<HidePacks::PanelViewController*>();
             auto rect = panel->GetComponent<UnityEngine::RectTransform*>();
@@ -377,6 +441,7 @@ namespace Panel {
         }
         navigation->ReplaceSecondViewController(panel.ptr());
         SetListVisible(false);
+        Reset();
     }
 }
 

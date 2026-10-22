@@ -66,6 +66,36 @@ namespace {
         "Rocket League x Monstercat", "Green Day Music Pack", "Timbaland Music Pack", "BTS Music Pack"
     };
 
+    constexpr std::array<char const*, 14> SampleKinds = {
+        "OST", "OST", "OST", "OST", "OST", "OST", "OST", "OST", "DLC", "DLC", "DLC", "DLC", "DLC", "DLC"
+    };
+    constexpr std::array<int, 14> SampleSongs = {11, 10, 10, 10, 10, 10, 10, 9, 8, 7, 6, 8, 7, 7};
+
+    std::array<bool, 14> visibleState = {true, true, true, true, true, true, true, true, true, true, true, true, true, true};
+    int selected = 0;
+    UnityW<TMPro::TextMeshProUGUI> detailName;
+    UnityW<TMPro::TextMeshProUGUI> detailInfo;
+    UnityW<TMPro::TextMeshProUGUI> summary;
+
+    void Refresh() {
+        int hidden = 0;
+        for (bool value : visibleState) {
+            if (!value) {
+                hidden++;
+            }
+        }
+        auto total = static_cast<int>(visibleState.size());
+        if (summary) {
+            summary->set_text(fmt::format("{} hidden | {} visible | {} total", hidden, total - hidden, total));
+        }
+        if (detailName) {
+            detailName->set_text(SampleNames[selected]);
+        }
+        if (detailInfo) {
+            detailInfo->set_text(fmt::format("{} | {} songs | {}", SampleKinds[selected], SampleSongs[selected], visibleState[selected] ? "Visible" : "Hidden"));
+        }
+    }
+
     UnityEngine::UI::LayoutElement* Sized(UnityEngine::Transform* child, UnityEngine::Transform* root, float height) {
         UnityEngine::Transform* top = child;
         while (top->parent && top->parent.ptr() != root) {
@@ -168,7 +198,8 @@ namespace {
             catcher->color = {0.0f, 0.0f, 0.0f, 0.01f};
             catcher->raycastTarget = true;
         }
-        for (auto name : SampleNames) {
+        for (int index = 0; index < static_cast<int>(SampleNames.size()); index++) {
+            auto name = SampleNames[index];
             auto line = Row(list->transform, CoverSize + 1.0f);
             rowStates.push_back({line->transform, {}, true});
             line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
@@ -181,8 +212,11 @@ namespace {
             size->preferredWidth = CoverSize;
             size->minHeight = CoverSize;
             size->preferredHeight = CoverSize;
-            auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name](bool value) {
+            auto toggle = BSML::Lite::CreateToggle(line->transform, name, true, [name, index](bool value) {
                 Logger.info("{} {}", name, value);
+                visibleState[index] = value;
+                selected = index;
+                Refresh();
             });
             auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
             if (!element) {
@@ -203,30 +237,75 @@ namespace {
         }
     }
 
-    void BuildSide(UnityEngine::Transform* pane) {
-        auto root = Fill(pane, 2.0f);
-        auto title = BSML::Lite::CreateText(root->transform, "Hide Packs", 6.0f, {0.0f, 0.0f}, {SideWidth, 8.0f});
-        title->set_alignment(TMPro::TextAlignmentOptions::Center);
-        Sized(title->transform, root->transform, 8.0f);
-        auto counter = BSML::Lite::CreateText(root->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {SideWidth, 6.0f});
-        counter->set_alignment(TMPro::TextAlignmentOptions::Center);
-        Sized(counter->transform, root->transform, 6.0f);
+    UnityEngine::UI::HorizontalLayoutGroup* ButtonRow(UnityEngine::Transform* root, float height) {
+        auto row = Row(root, height);
+        row->childForceExpandWidth = true;
+        return row;
+    }
 
-        auto selection = Row(root->transform, ButtonHeight);
-        selection->childForceExpandWidth = true;
-        MakeButton(selection->transform, "All", "PracticeButton", ButtonHeight, [] { Logger.info("All"); });
-        MakeButton(selection->transform, "None", "PracticeButton", ButtonHeight, [] { Logger.info("None"); });
-        MakeButton(selection->transform, "Invert", "PracticeButton", ButtonHeight, [] { Logger.info("Invert"); });
+    void BuildSide(UnityEngine::Transform* pane) {
+        constexpr float Compact = 7.0f;
+        constexpr float CoverBig = 14.0f;
+        auto root = Fill(pane, 1.5f);
+        auto title = BSML::Lite::CreateText(root->transform, "Hide Packs", 5.0f, {0.0f, 0.0f}, {SideWidth, 7.0f});
+        title->set_alignment(TMPro::TextAlignmentOptions::Center);
+        Sized(title->transform, root->transform, 7.0f);
+
+        auto detail = Row(root->transform, CoverBig);
+        detail->spacing = 3.0f;
+        detail->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
+        auto cover = UnityEngine::GameObject::New_ctor("DetailCover");
+        cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(detail->transform, false);
+        auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
+        picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        auto coverSize = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
+        coverSize->minWidth = CoverBig;
+        coverSize->preferredWidth = CoverBig;
+        coverSize->minHeight = CoverBig;
+        coverSize->preferredHeight = CoverBig;
+        auto texts = BSML::Lite::CreateVerticalLayoutGroup(detail->transform);
+        texts->spacing = 0.5f;
+        texts->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
+        texts->childControlWidth = true;
+        texts->childControlHeight = true;
+        texts->childForceExpandWidth = true;
+        texts->childForceExpandHeight = false;
+        auto textsSize = texts->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        textsSize->minWidth = SideWidth - CoverBig - 6.0f;
+        textsSize->preferredWidth = SideWidth - CoverBig - 6.0f;
+        detailName = BSML::Lite::CreateText(texts->transform, "", 3.8f, {0.0f, 0.0f}, {SideWidth - CoverBig - 6.0f, 6.0f});
+        detailName->set_alignment(TMPro::TextAlignmentOptions::Left);
+        detailName->set_enableWordWrapping(false);
+        detailName->set_overflowMode(TMPro::TextOverflowModes::Ellipsis);
+        Sized(detailName->transform, texts->transform, 6.0f);
+        detailInfo = BSML::Lite::CreateText(texts->transform, "", 3.0f, {0.0f, 0.0f}, {SideWidth - CoverBig - 6.0f, 5.0f});
+        detailInfo->set_alignment(TMPro::TextAlignmentOptions::Left);
+        detailInfo->set_enableWordWrapping(false);
+        Sized(detailInfo->transform, texts->transform, 5.0f);
+
+        auto kinds = ButtonRow(root->transform, Compact);
+        MakeButton(kinds->transform, "Only OST", "PracticeButton", Compact, [] { Logger.info("Only OST"); });
+        MakeButton(kinds->transform, "Only DLC", "PracticeButton", Compact, [] { Logger.info("Only DLC"); });
+        MakeButton(kinds->transform, "Only Custom", "PracticeButton", Compact, [] { Logger.info("Only Custom"); });
+
+        auto selection = ButtonRow(root->transform, Compact);
+        MakeButton(selection->transform, "All", "PracticeButton", Compact, [] { Logger.info("All"); });
+        MakeButton(selection->transform, "None", "PracticeButton", Compact, [] { Logger.info("None"); });
+        MakeButton(selection->transform, "Invert", "PracticeButton", Compact, [] { Logger.info("Invert"); });
+
+        summary = BSML::Lite::CreateText(root->transform, "", 3.2f, {0.0f, 0.0f}, {SideWidth, 5.0f});
+        summary->set_alignment(TMPro::TextAlignmentOptions::Center);
+        Sized(summary->transform, root->transform, 5.0f);
 
         auto spacer = UnityEngine::GameObject::New_ctor("Spacer");
         spacer->AddComponent<UnityEngine::RectTransform*>()->SetParent(root->transform, false);
         auto spacerLayout = spacer->AddComponent<UnityEngine::UI::LayoutElement*>();
         spacerLayout->flexibleHeight = 1.0f;
 
-        auto footer = Row(root->transform, ButtonHeight);
-        footer->childForceExpandWidth = true;
+        auto footer = ButtonRow(root->transform, ButtonHeight);
         MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
         MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
+        Refresh();
     }
 }
 

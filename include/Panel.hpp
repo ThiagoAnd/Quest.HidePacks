@@ -14,5 +14,6 @@ namespace GlobalNamespace {
 
 namespace Panel {
     void SetListVisible(bool visible);
+    void KeepListHidden();
     void Show(GlobalNamespace::LevelFilteringNavigationController* navigation);
 }

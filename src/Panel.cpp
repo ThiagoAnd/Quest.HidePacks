@@ -14,6 +14,7 @@
 #include "GlobalNamespace/LevelPackDetailViewController.hpp"
 #include "GlobalNamespace/StandardLevelDetailViewController.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
+#include "HMUI/ImageView.hpp"
 #include "HMUI/ScrollView.hpp"
 #include "HMUI/Touchable.hpp"
 #include "TMPro/TextMeshProUGUI.hpp"
@@ -279,16 +280,12 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
         auto line = Row(list->transform, CoverSize + 1.0f);
         rowStates.push_back({line->transform, {}, true});
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
-        auto cover = UnityEngine::GameObject::New_ctor("Cover");
-        cover->AddComponent<UnityEngine::RectTransform*>()->SetParent(line->transform, false);
-        auto picture = cover->AddComponent<UnityEngine::UI::Image*>();
-        if (entries[i].cover) {
-            picture->sprite = entries[i].cover.ptr();
-            picture->preserveAspect = true;
-        } else {
-            picture->color = {0.25f, 0.55f, 0.95f, 1.0f};
+        auto picture = BSML::Lite::CreateImage(line->transform, entries[i].cover.ptr(), {0.0f, 0.0f}, {CoverSize, CoverSize});
+        picture->preserveAspect = true;
+        auto size = picture->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
+        if (!size) {
+            size = picture->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
         }
-        auto size = cover->AddComponent<UnityEngine::UI::LayoutElement*>();
         size->minWidth = CoverSize;
         size->preferredWidth = CoverSize;
         size->minHeight = CoverSize;

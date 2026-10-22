@@ -26,6 +26,7 @@
 #include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
 #include "UnityEngine/UI/Image.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
+#include "UnityEngine/UI/LayoutRebuilder.hpp"
 #include "UnityEngine/UI/VerticalLayoutGroup.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 #include "bsml/shared/Helpers/creation.hpp"
@@ -234,6 +235,22 @@ namespace {
             if (viewportTransform) {
                 viewportRect = viewportTransform->GetComponent<UnityEngine::RectTransform*>();
             }
+        }
+        try {
+            auto paneRect = pane->GetComponent<UnityEngine::RectTransform*>();
+            UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(paneRect);
+            auto content = list->GetComponent<UnityEngine::RectTransform*>();
+            auto size = content->rect;
+            Logger.info("List rows {} children {} content {}x{} active {} pane {}x{}", rowStates.size(), list->transform->childCount, size.width, size.height, list->gameObject->activeInHierarchy, paneRect->rect.width, paneRect->rect.height);
+            if (viewportRect) {
+                Logger.info("Viewport {}x{}", viewportRect->rect.width, viewportRect->rect.height);
+            }
+            if (list->transform->childCount > 0) {
+                auto first = list->transform->GetChild(0)->GetComponent<UnityEngine::RectTransform*>();
+                Logger.info("First row {}x{} at {} {} active {}", first->rect.width, first->rect.height, first->anchoredPosition.x, first->anchoredPosition.y, first->gameObject->activeInHierarchy);
+            }
+        } catch (std::exception const& e) {
+            Logger.warn("Could not measure the list: {}", e.what());
         }
     }
 

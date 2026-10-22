@@ -11,6 +11,7 @@
 #include "PackState.hpp"
 #include "UnityEngine/Color.hpp"
 #include "UnityEngine/GameObject.hpp"
+#include "UnityEngine/Object.hpp"
 #include "UnityEngine/RectTransform.hpp"
 #include "UnityEngine/TextAnchor.hpp"
 #include "UnityEngine/UI/Button.hpp"
@@ -50,6 +51,7 @@ namespace {
     };
     std::vector<RowState> rowStates;
     UnityW<UnityEngine::RectTransform> viewportRect;
+    UnityW<UnityEngine::Transform> listContent;
 
     UnityEngine::UI::LayoutElement* Sized(UnityEngine::Transform* child, UnityEngine::Transform* root, float height) {
         UnityEngine::Transform* top = child;
@@ -154,6 +156,32 @@ namespace {
         element->preferredWidth = PanelWidth - 22.0f;
         element->flexibleWidth = 0.0f;
     }
+
+    void BuildRows(UnityEngine::Transform* list) {
+        PackState::BeginSession();
+        rowStates.clear();
+        for (auto const& entry : PackState::Entries()) {
+            AddPackRow(list, entry);
+        }
+        for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
+            graphic->raycastTarget = true;
+        }
+        PackState::MarkBuilt();
+    }
+
+    void RebuildRows() {
+        if (!listContent) {
+            return;
+        }
+        for (auto& row : rowStates) {
+            if (row.transform) {
+                UnityEngine::Object::Destroy(row.transform->gameObject);
+            }
+        }
+        BuildRows(listContent.ptr());
+        PackState::Refresh();
+        Logger.info("Rebuilt the pack rows");
+    }
 }
 
 void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemDisabling) {
@@ -193,14 +221,8 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     auto scroll = list->GetComponentInParent<HMUI::ScrollView*>();
     AddScrollCatcher(scroll ? scroll->transform : listElement->gameObject->transform);
 
-    PackState::BeginSession();
-    rowStates.clear();
-    for (auto const& entry : PackState::Entries()) {
-        AddPackRow(list->transform, entry);
-    }
-    for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-        graphic->raycastTarget = true;
-    }
+    listContent = list->transform;
+    BuildRows(list->transform);
 
     auto footer = Row(root->transform, ButtonHeight);
     footer->spacing = FooterGap;
@@ -235,6 +257,9 @@ namespace Panel {
             rect->sizeDelta = {SlotWidth, CanvasHeight};
         }
         navigation->ReplaceSecondViewController(panel.ptr());
+        if (PackState::RowsStale()) {
+            RebuildRows();
+        }
         SetListVisible(false);
         PackState::Reset();
         PackState::FilterRows(false);

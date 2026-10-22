@@ -12,6 +12,7 @@ namespace {
     constexpr float MessageSeconds = 3.0f;
 
     std::vector<PackState::Entry> entries;
+    std::vector<std::string> builtIds;
     std::unordered_set<std::string> pending;
     std::vector<UnityW<BSML::ToggleSetting>> toggles;
     std::vector<UnityW<UnityEngine::Transform>> rows;
@@ -93,6 +94,25 @@ namespace PackState {
         toggles.clear();
         rows.clear();
         pending = Config::Hidden();
+    }
+
+    void MarkBuilt() {
+        builtIds.clear();
+        for (auto const& entry : entries) {
+            builtIds.push_back(entry.id);
+        }
+    }
+
+    bool RowsStale() {
+        if (builtIds.size() != entries.size()) {
+            return true;
+        }
+        for (size_t i = 0; i < entries.size(); i++) {
+            if (builtIds[i] != entries[i].id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool IsVisible(std::string const& id) {

@@ -21,6 +21,8 @@ namespace PackState {
     std::vector<Entry> const& Entries();
     void Load(GlobalNamespace::LevelFilteringNavigationController* navigation);
     void BeginSession();
+    void MarkBuilt();
+    bool RowsStale();
     bool IsVisible(std::string const& id);
     void AddToggle(BSML::ToggleSetting* toggle);
     void AddRow(UnityEngine::Transform* row);

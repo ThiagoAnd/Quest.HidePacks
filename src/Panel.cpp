@@ -131,7 +131,8 @@ namespace {
         rowStates.push_back({line->transform, {}, true});
         PackState::AddRow(line->transform);
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
-        auto picture = BSML::Lite::CreateImage(line->transform, entry.cover.ptr(), {0.0f, 0.0f}, {CoverSize, CoverSize});
+        auto cover = entry.cover;
+        auto picture = BSML::Lite::CreateImage(line->transform, cover.ptr(), {0.0f, 0.0f}, {CoverSize, CoverSize});
         picture->preserveAspect = true;
         auto size = picture->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!size) {

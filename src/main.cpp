@@ -15,7 +15,6 @@ MOD_EXPORT_FUNC void setup(CModInfo& info) {
 
 MOD_EXPORT_FUNC void load() {
     il2cpp_functions::Init();
-    Config::Load();
 
     auto earlyHookCount = EARLY_HOOK_COUNT;
     if (earlyHookCount > 0) {
@@ -25,6 +24,7 @@ MOD_EXPORT_FUNC void load() {
 }
 
 MOD_EXPORT_FUNC void late_load() {
+    Config::Load();
     custom_types::Register::AutoRegister();
     auto lateHookCount = LATE_HOOK_COUNT;
     if (lateHookCount > 0) {

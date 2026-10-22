@@ -55,9 +55,21 @@ namespace Config {
             rapidjson::StringBuffer sb;
             rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
             doc.Accept(writer);
-            std::filesystem::create_directories(std::filesystem::path(ConfigPath).parent_path());
-            std::ofstream out(ConfigPath, std::ios::trunc);
-            out << sb.GetString();
+            std::filesystem::path target(ConfigPath);
+            std::filesystem::create_directories(target.parent_path());
+            std::filesystem::path temp = target;
+            temp += ".tmp";
+            {
+                std::ofstream out(temp, std::ios::trunc);
+                out << sb.GetString();
+                out.flush();
+                if (!out.good()) {
+                    Logger.warn("Config save failed, keeping the previous file");
+                    std::filesystem::remove(temp);
+                    return;
+                }
+            }
+            std::filesystem::rename(temp, target);
             Logger.info("Saved {} hidden packs", hidden.size());
         } catch (std::exception const& e) {
             Logger.warn("Config save failed: {}", e.what());

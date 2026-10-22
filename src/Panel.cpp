@@ -57,6 +57,9 @@ namespace {
     };
     std::vector<RowState> rowStates;
     UnityW<UnityEngine::RectTransform> viewportRect;
+    UnityW<UnityEngine::RectTransform> listRect;
+    UnityW<UnityEngine::RectTransform> listPane;
+    int measureTicks = 0;
     bool listHidden = false;
     int hiddenTicks = 0;
 
@@ -240,6 +243,8 @@ namespace {
             auto paneRect = pane->GetComponent<UnityEngine::RectTransform*>();
             UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(paneRect);
             auto content = list->GetComponent<UnityEngine::RectTransform*>();
+            listRect = content;
+            listPane = paneRect;
             auto size = content->rect;
             Logger.info("List rows {} children {} content {}x{} active {} pane {}x{}", rowStates.size(), list->transform->childCount, size.width, size.height, list->gameObject->activeInHierarchy, paneRect->rect.width, paneRect->rect.height);
             if (viewportRect) {
@@ -422,6 +427,25 @@ namespace Panel {
 }
 
 void HidePacks::PanelViewController::Update() {
+    if (listRect && listPane && measureTicks < 200) {
+        measureTicks++;
+        if (measureTicks == 60 || measureTicks == 199) {
+            try {
+                if (measureTicks == 60) {
+                    UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(listPane.ptr());
+                }
+                auto parent = listRect->parent.ptr()->GetComponent<UnityEngine::RectTransform*>();
+                auto grand = parent->parent.ptr()->GetComponent<UnityEngine::RectTransform*>();
+                Logger.info("Tick {} content {}x{} parent {}x{} {} grand {}x{} {} viewport {}x{}", measureTicks, listRect->rect.width, listRect->rect.height, parent->rect.width, parent->rect.height, std::string(parent->name), grand->rect.width, grand->rect.height, std::string(grand->name), viewportRect ? viewportRect->rect.width : -1.0f, viewportRect ? viewportRect->rect.height : -1.0f);
+                if (listRect->childCount > 0) {
+                    auto first = listRect->GetChild(0)->GetComponent<UnityEngine::RectTransform*>();
+                    Logger.info("Tick {} first row {}x{} children {}", measureTicks, first->rect.width, first->rect.height, first->childCount);
+                }
+            } catch (std::exception const& e) {
+                Logger.warn("Could not measure later: {}", e.what());
+            }
+        }
+    }
     if (listHidden) {
         SetVisible<GlobalNamespace::LevelCollectionViewController>(false);
         SetVisible<GlobalNamespace::LevelPackDetailViewController>(false);

@@ -78,7 +78,7 @@ namespace {
             }
             auto info = Info::New_ctor();
             info->levelCategory = value;
-            info->localizedKey = "";
+            info->localizedKey = "Hide Packs";
             info->categoryIcon = LoadIcon();
             ArrayW<Info*> extended(infos.size() + 1);
             infos.copy_to(extended, 0);

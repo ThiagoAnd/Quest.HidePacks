@@ -46,6 +46,11 @@ namespace {
     constexpr float ButtonHeight = 8.0f;
     constexpr float HeaderHeight = 9.6f;
     constexpr float HeaderLift = 0.0f;
+    constexpr float HeaderGap = 5.0f;
+    constexpr float HeaderButton = (PanelWidth - 2.0f * HeaderGap) / 3.0f;
+    constexpr float FooterGap = 3.5f;
+    constexpr float FooterButton = 25.0f;
+    constexpr float FooterText = PanelWidth - 2.0f * FooterButton - 2.0f * FooterGap;
 
 
     struct RowState {
@@ -157,6 +162,16 @@ namespace {
         return button;
     }
 
+    void Width(UnityEngine::Component* item, float width) {
+        auto element = item->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
+        if (!element) {
+            element = item->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        }
+        element->minWidth = width;
+        element->preferredWidth = width;
+        element->flexibleWidth = 0.0f;
+    }
+
     UnityEngine::UI::HorizontalLayoutGroup* Row(UnityEngine::Transform* parent, float height) {
         auto row = BSML::Lite::CreateHorizontalLayoutGroup(parent);
         row->spacing = 2.0f;
@@ -185,10 +200,11 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->pivot = {0.5f, 1.0f};
     headerRect->sizeDelta = {PanelWidth, HeaderHeight};
     headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
-    headerGroup->childForceExpandWidth = true;
-    MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); });
-    MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Logger.info("Only DLC"); });
-    MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); });
+    headerGroup->childForceExpandWidth = false;
+    headerGroup->spacing = HeaderGap;
+    Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { Logger.info("All"); Probe(); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "Only DLC", "PracticeButton", HeaderHeight, [] { Logger.info("Only DLC"); }), HeaderButton);
+    Width(MakeButton(headerGroup->transform, "Only Custom", "PracticeButton", HeaderHeight, [] { Logger.info("Only Custom"); }), HeaderButton);
 
     auto root = BSML::Lite::CreateVerticalLayoutGroup(transform);
     auto rootRect = root->GetComponent<UnityEngine::RectTransform*>();
@@ -264,9 +280,10 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
 
     auto footer = Row(root->transform, ButtonHeight);
     auto footerRect = footer->GetComponent<UnityEngine::RectTransform*>();
-    BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {40.0f, 6.0f});
-    MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); });
-    MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); });
+    footer->spacing = FooterGap;
+    Width(BSML::Lite::CreateText(footer->transform, "0 of 14 hidden", 3.5f, {0.0f, 0.0f}, {FooterText, 6.0f}), FooterText);
+    Width(MakeButton(footer->transform, "Cancel", "PracticeButton", ButtonHeight, [] { Logger.info("Cancel"); }), FooterButton);
+    Width(MakeButton(footer->transform, "Apply", "PlayButton", ButtonHeight, [] { Logger.info("Apply"); }), FooterButton);
     if (scroll) {
         auto viewportTransform = scroll->transform->Find("Viewport");
         if (viewportTransform) {

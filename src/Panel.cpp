@@ -50,12 +50,10 @@ namespace {
     constexpr float SlotHeight = 10.0f;
     constexpr float CanvasHeight = 120.0f;
     constexpr float CanvasLift = (CanvasHeight - SlotHeight) / 2.0f;
-    constexpr float SlotCenter = 17.0f;
     constexpr float PanelTop = 12.0f;
     constexpr float CoverSize = 6.0f;
     constexpr float ButtonHeight = 8.0f;
     constexpr float HeaderHeight = 9.6f;
-    constexpr float HeaderLift = 0.0f;
     constexpr float HeaderGap = 5.0f;
     constexpr float HeaderButton = (PanelWidth - HeaderGap) / 2.0f;
     constexpr float FooterGap = 2.5f;
@@ -238,7 +236,7 @@ void HidePacks::PanelViewController::DidActivate(bool firstActivation, bool adde
     headerRect->anchorMax = {0.5f, 1.0f};
     headerRect->pivot = {0.5f, 1.0f};
     headerRect->sizeDelta = {PanelWidth, HeaderHeight};
-    headerRect->anchoredPosition = {0.0f, HeaderLift - CanvasLift};
+    headerRect->anchoredPosition = {0.0f, -CanvasLift};
     headerGroup->childForceExpandWidth = false;
     headerGroup->spacing = HeaderGap;
     Width(MakeButton(headerGroup->transform, "All", "PracticeButton", HeaderHeight, [] { ShowRows(false); }), HeaderButton);

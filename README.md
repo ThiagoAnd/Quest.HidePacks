@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/YOUR_USERNAME"><img alt="Support me on Ko-fi" src="https://img.shields.io/badge/Support%20me%20on%20Ko--fi-0057B8?style=for-the-badge"></a>
+  <a href="https://ko-fi.com/thiagoand"><img alt="Support me on Ko-fi" src="https://img.shields.io/badge/Support%20me%20on%20Ko--fi-0057B8?style=for-the-badge"></a>
 </p>
 
 <p align="center">
@@ -72,7 +72,7 @@ Errors start with `HIDEPACKS ERROR`.
 
 ## Support
 
-If this mod made your game better and you would like to see more from me, you can support my work on [Ko-fi](https://ko-fi.com/YOUR_USERNAME). Thank you!
+If this mod made your game better and you would like to see more from me, you can support my work on [Ko-fi](https://ko-fi.com/thiagoand). Thank you!
 
 ## Credits
 

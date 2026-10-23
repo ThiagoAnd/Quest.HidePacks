@@ -4,12 +4,12 @@
   "name": "${mod_name}",
   "id": "${mod_id}",
   "author": "ThiagoAnd",
-  "version": "0.1.0",
+  "version": "${version}",
   "packageId": "com.beatgames.beatsaber",
   "packageVersion": "1.40.8_7379",
   "description": "Hides official level packs in the solo menu",
   "dependencies": [],
-  "modFiles": [
+  "lateModFiles": [
     "${binary}"
   ],
   "libraryFiles": [],

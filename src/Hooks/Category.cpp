@@ -2,7 +2,9 @@
 #include "logger.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "GlobalNamespace/AnnotatedBeatmapLevelCollectionsViewController.hpp"
@@ -10,6 +12,9 @@
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
 #include "Icon.hpp"
 #include "UnityEngine/GameObject.hpp"
+#include "UnityEngine/Resources.hpp"
+#include "UnityEngine/Sprite.hpp"
+#include "UnityEngine/Texture2D.hpp"
 #include "Panel.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 
@@ -60,11 +65,53 @@ namespace {
         return BSML::Lite::ArrayToSprite(bytes);
     }
 
+    void Describe(UnityEngine::Sprite* sprite, std::string const& label) {
+        if (!sprite) {
+            Logger.info("ICON {} has no sprite", label);
+            return;
+        }
+        auto texture = sprite->texture;
+        if (!texture) {
+            Logger.info("ICON {} sprite {} has no texture", label, Text(sprite->name));
+            return;
+        }
+        Logger.info("ICON {} sprite {} texture {}x{} mips {} filter {} aniso {} ppu {} rect {}x{}", label, Text(sprite->name), texture->width, texture->height, texture->mipmapCount, static_cast<int>(texture->filterMode), texture->anisoLevel, sprite->pixelsPerUnit, sprite->rect.width, sprite->rect.height);
+    }
+
+    void Survey(ArrayW<Info*> infos) {
+        static bool done = false;
+        if (done) {
+            return;
+        }
+        done = true;
+        try {
+            for (auto info : infos) {
+                if (info) {
+                    Describe(info->categoryIcon, "category " + std::to_string(info->levelCategory.value__));
+                }
+            }
+            for (auto sprite : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Sprite*>()) {
+                if (!sprite) {
+                    continue;
+                }
+                std::string name = Text(sprite->name);
+                std::string lower = name;
+                std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+                if (lower.find("eye") != std::string::npos || lower.find("hide") != std::string::npos || lower.find("hidden") != std::string::npos || lower.find("visib") != std::string::npos || lower.find("unseen") != std::string::npos) {
+                    Logger.info("ICON candidate {}", name);
+                }
+            }
+        } catch (std::exception const& e) {
+            ReportError("icon survey", e);
+        }
+    }
+
     void AddInfo(SelectLevelCategoryViewController* self) {
         auto infos = self->_allLevelCategoryInfos;
         if (!infos) {
             return;
         }
+        Survey(infos);
         if (ours.empty()) {
             int first = FindFreeValue(infos);
             for (int i = 0; i < Wanted; i++) {
@@ -80,6 +127,7 @@ namespace {
             info->levelCategory = value;
             info->localizedKey = "Hide Packs";
             info->categoryIcon = LoadIcon();
+            Describe(info->categoryIcon, "ours");
             ArrayW<Info*> extended(infos.size() + 1);
             infos.copy_to(extended, 0);
             extended[infos.size()] = info;

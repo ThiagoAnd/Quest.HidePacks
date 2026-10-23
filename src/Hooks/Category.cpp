@@ -2,9 +2,7 @@
 #include "logger.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <cstring>
-#include <string>
 #include <vector>
 
 #include "GlobalNamespace/AnnotatedBeatmapLevelCollectionsViewController.hpp"
@@ -12,11 +10,6 @@
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
 #include "Icon.hpp"
 #include "UnityEngine/GameObject.hpp"
-#include "UnityEngine/FilterMode.hpp"
-#include "UnityEngine/Sprite.hpp"
-#include "UnityEngine/Texture2D.hpp"
-#include "UnityEngine/TextureFormat.hpp"
-#include "UnityEngine/TextureWrapMode.hpp"
 #include "Panel.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 
@@ -64,31 +57,7 @@ namespace {
     UnityEngine::Sprite* LoadIcon() {
         ArrayW<uint8_t> bytes(Icons::Eye.size());
         std::memcpy(bytes.begin(), Icons::Eye.data(), Icons::Eye.size());
-        auto plain = BSML::Lite::ArrayToSprite(bytes);
-        if (!plain || !plain->texture) {
-            return plain;
-        }
-        auto source = plain->texture;
-        auto texture = UnityEngine::Texture2D::New_ctor(source->width, source->height, UnityEngine::TextureFormat::RGBA32, true, false);
-        texture->SetPixels32(source->GetPixels32());
-        texture->Apply(true, false);
-        texture->filterMode = UnityEngine::FilterMode::Trilinear;
-        texture->wrapMode = UnityEngine::TextureWrapMode::Clamp;
-        auto sprite = BSML::Lite::TextureToSprite(texture);
-        return sprite ? sprite : plain;
-    }
-
-    void Describe(UnityEngine::Sprite* sprite, std::string const& label) {
-        if (!sprite) {
-            Logger.info("ICON {} has no sprite", label);
-            return;
-        }
-        auto texture = sprite->texture;
-        if (!texture) {
-            Logger.info("ICON {} sprite {} has no texture", label, Text(sprite->name));
-            return;
-        }
-        Logger.info("ICON {} sprite {} texture {}x{} mips {} filter {} aniso {} ppu {} rect {}x{}", label, Text(sprite->name), texture->width, texture->height, texture->mipmapCount, static_cast<int>(texture->filterMode), texture->anisoLevel, sprite->pixelsPerUnit, sprite->rect.width, sprite->rect.height);
+        return BSML::Lite::ArrayToSprite(bytes);
     }
 
     void AddInfo(SelectLevelCategoryViewController* self) {
@@ -111,7 +80,6 @@ namespace {
             info->levelCategory = value;
             info->localizedKey = "Hide Packs";
             info->categoryIcon = LoadIcon();
-            Describe(info->categoryIcon, "ours");
             ArrayW<Info*> extended(infos.size() + 1);
             infos.copy_to(extended, 0);
             extended[infos.size()] = info;

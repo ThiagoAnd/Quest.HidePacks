@@ -140,11 +140,28 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: output/
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          VERSION="${VERSION%%[-+]*}"
+          awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 {found=1; next} found && /^## \[/ {exit} found {print}' CHANGELOG.md > notes.txt
+          if [ ! -s notes.txt ]; then
+            echo "CHANGELOG.md has no section for $VERSION"
+            exit 1
+          fi
+          cat notes.txt
 
       - name: Get Library Name and Build ID
         id: lib_info
@@ -164,7 +181,7 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.version }}
           draft: false
-          generate_release_notes: true
+          body_path: notes.txt
           files: |
             ./output/*.qmod
         env:
@@ -172,7 +189,8 @@ jobs:
 
       - name: Generate release body
         run: |
-          BODY_FILE="body.txt"
+          cat notes.txt > body.txt
+          echo '' >> body.txt
           echo '---' >> body.txt
           echo '' >> body.txt
           echo '### Build Information' >> body.txt
@@ -193,7 +211,6 @@ jobs:
           files: |
             ./output/*.so
           body_path: body.txt
-          generate_release_notes: true
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

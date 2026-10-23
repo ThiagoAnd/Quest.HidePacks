@@ -40,7 +40,7 @@ namespace {
     void SyncToggles() {
         syncing = true;
         for (size_t i = 0; i < toggles.size() && i < entries.size(); i++) {
-            if (toggles[i]) {
+            if (toggles[i] && toggles[i]->toggle) {
                 bool visible = !pending.contains(entries[i].id);
                 if (toggles[i]->toggle->isOn != visible) {
                     toggles[i]->set_Value(visible);

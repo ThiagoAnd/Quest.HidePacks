@@ -30,7 +30,7 @@ namespace {
             if (!pack) {
                 return source;
             }
-            std::string id = pack->packID;
+            std::string id = Text(pack->packID);
             if (!IsCustom(id) && Config::IsHidden(id)) {
                 continue;
             }

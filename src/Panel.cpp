@@ -89,6 +89,9 @@ namespace {
     }
 
     void Width(UnityEngine::Component* item, float width) {
+        if (!item) {
+            return;
+        }
         auto element = item->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!element) {
             element = item->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
@@ -142,15 +145,17 @@ namespace {
         line->childAlignment = UnityEngine::TextAnchor::MiddleLeft;
         auto cover = entry.cover;
         auto picture = BSML::Lite::CreateImage(line->transform, cover.ptr(), {0.0f, 0.0f}, {CoverSize, CoverSize});
-        picture->preserveAspect = true;
-        auto size = picture->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
-        if (!size) {
-            size = picture->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+        if (picture) {
+            picture->preserveAspect = true;
+            auto size = picture->gameObject->GetComponent<UnityEngine::UI::LayoutElement*>();
+            if (!size) {
+                size = picture->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
+            }
+            size->minWidth = CoverSize;
+            size->preferredWidth = CoverSize;
+            size->minHeight = CoverSize;
+            size->preferredHeight = CoverSize;
         }
-        size->minWidth = CoverSize;
-        size->preferredWidth = CoverSize;
-        size->minHeight = CoverSize;
-        size->preferredHeight = CoverSize;
         auto toggle = BSML::Lite::CreateToggle(line->transform, entry.name, PackState::IsVisible(id), [id](bool visible) {
             try {
                 PackState::OnSwitch(id, visible);
@@ -159,6 +164,9 @@ namespace {
             }
         });
         PackState::AddToggle(toggle);
+        if (!toggle) {
+            return;
+        }
         auto element = toggle->GetComponent<UnityEngine::UI::LayoutElement*>();
         if (!element) {
             element = toggle->gameObject->AddComponent<UnityEngine::UI::LayoutElement*>();
@@ -175,7 +183,9 @@ namespace {
             AddPackRow(list, entry);
         }
         for (auto graphic : list->GetComponentsInChildren<UnityEngine::UI::Graphic*>(true)) {
-            graphic->raycastTarget = true;
+            if (graphic) {
+                graphic->raycastTarget = true;
+            }
         }
         PackState::MarkBuilt();
     }
@@ -265,6 +275,10 @@ namespace Panel {
         PackState::Load(navigation);
         if (!panel) {
             panel = BSML::Helpers::CreateViewController<HidePacks::PanelViewController*>();
+            if (!panel) {
+                Logger.error("HIDEPACKS ERROR in creating the panel: the game returned nothing. Please send this file when reporting it.");
+                return;
+            }
             auto rect = panel->GetComponent<UnityEngine::RectTransform*>();
             rect->anchorMin = {0.5f, 0.5f};
             rect->anchorMax = {0.5f, 0.5f};

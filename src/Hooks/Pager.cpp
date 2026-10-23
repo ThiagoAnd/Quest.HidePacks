@@ -44,8 +44,14 @@ namespace {
 
     UnityEngine::RectTransform* MakeArrow(char const* text, std::function<void()> onClick) {
         auto label = BSML::Lite::CreateClickableText(bar.ptr(), text, 3.5f, {0, 0}, {pitch, height}, std::move(onClick));
+        if (!label) {
+            return nullptr;
+        }
         label->set_alignment(TMPro::TextAlignmentOptions::Center);
         auto rect = label->GetComponent<UnityEngine::RectTransform*>();
+        if (!rect) {
+            return nullptr;
+        }
         rect->anchorMin = {0.0f, 1.0f};
         rect->anchorMax = {0.0f, 1.0f};
         rect->pivot = {0.0f, 1.0f};
@@ -58,9 +64,19 @@ namespace {
     }
 
     void Apply() {
+        if (!control || !viewport || !indicator || !leftArrow || !rightArrow) {
+            return;
+        }
         auto iconControl = control->GetComponent<HMUI::IconSegmentedControl*>();
+        if (!iconControl || !iconControl->_cells) {
+            return;
+        }
         UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(control.ptr());
-        auto first = iconControl->_cells->get_Item(0)->GetComponent<UnityEngine::RectTransform*>();
+        auto firstCell = iconControl->_cells->get_Item(0);
+        auto first = firstCell ? firstCell->GetComponent<UnityEngine::RectTransform*>() : nullptr;
+        if (!first) {
+            return;
+        }
         ArrayW<UnityEngine::Vector3> corners(4);
         first->GetWorldCorners(corners);
         float current = viewport->InverseTransformPoint(corners[1]).x;
@@ -98,8 +114,13 @@ namespace {
         }
         bar = barRect;
         UnityEngine::UI::LayoutRebuilder::ForceRebuildLayoutImmediate(controlRect);
-        auto first = iconControl->_cells->get_Item(0)->GetComponent<UnityEngine::RectTransform*>();
-        auto second = iconControl->_cells->get_Item(1)->GetComponent<UnityEngine::RectTransform*>();
+        auto firstCell = iconControl->_cells->get_Item(0);
+        auto secondCell = iconControl->_cells->get_Item(1);
+        auto first = firstCell ? firstCell->GetComponent<UnityEngine::RectTransform*>() : nullptr;
+        auto second = secondCell ? secondCell->GetComponent<UnityEngine::RectTransform*>() : nullptr;
+        if (!first || !second) {
+            return;
+        }
         auto firstLeft = BarPoint(first, 1);
         auto secondLeft = BarPoint(second, 1);
         auto firstBottom = BarPoint(first, 0);
@@ -157,18 +178,29 @@ namespace {
         float buttonWidth = 1.5f;
         if (!leftArrow) {
             auto left = MakeArrow("Back", [] { Previous(); });
+            if (!left) {
+                return;
+            }
             place(left, 0.0f, buttonWidth);
             leftArrow = left->gameObject;
         }
         if (!rightArrow) {
             auto right = MakeArrow("Next", [] { Next(); });
+            if (!right) {
+                return;
+            }
             place(right, slots - buttonWidth, buttonWidth);
             rightArrow = right->gameObject;
         }
         if (!indicator) {
-            indicator = BSML::Lite::CreateText(bar.ptr(), "", 3.5f, {0, 0}, {pitch, height});
-            indicator->set_alignment(TMPro::TextAlignmentOptions::Center);
-            place(indicator->GetComponent<UnityEngine::RectTransform*>(), buttonWidth, slots - 2 * buttonWidth);
+            auto text = BSML::Lite::CreateText(bar.ptr(), "", 3.5f, {0, 0}, {pitch, height});
+            auto textRect = text ? text->GetComponent<UnityEngine::RectTransform*>() : nullptr;
+            if (!textRect) {
+                return;
+            }
+            text->set_alignment(TMPro::TextAlignmentOptions::Center);
+            place(textRect, buttonWidth, slots - 2 * buttonWidth);
+            indicator = text;
         }
         page = std::min(page, PageCount() - 1);
         Apply();

@@ -27,3 +27,7 @@ The file can also be edited by hand. Pack ids for 1.40.8 are `OstVol1` to `OstVo
 ## Compatibility
 
 The tab bar shows four tabs per page with Back and Next, so it works with or without RecentlyPlayed.
+
+## License
+
+GPL-3.0, see the LICENSE file.

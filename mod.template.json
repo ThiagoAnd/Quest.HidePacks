@@ -8,7 +8,13 @@
   "packageId": "com.beatgames.beatsaber",
   "packageVersion": "1.40.8_7379",
   "description": "Hides official level packs in the solo menu",
-  "dependencies": [],
+  "dependencies": [
+    {
+      "id": "CategoryTabs",
+      "version": "^0.1.0",
+      "downloadIfMissing": "https://github.com/ThiagoAnd/Quest.CategoryTabs/releases/download/v0.1.0/CategoryTabs.qmod"
+    }
+  ],
   "lateModFiles": [
     "${binary}"
   ],

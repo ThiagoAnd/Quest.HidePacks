@@ -6,6 +6,7 @@ All notable changes to this mod are listed here. The format follows Keep a Chang
 
 ### Changed
 - The eye tab and the paging of the tab bar now come from CategoryTabs, which has to be installed too.
+- The qmod lists CategoryTabs as a dependency, so a mod manager can install it together.
 - Without CategoryTabs no pack is hidden and the log says so, so nothing stays hidden with no way to undo it.
 
 ## [0.1.0] - 2026-10-23

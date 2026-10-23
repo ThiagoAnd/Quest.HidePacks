@@ -12,6 +12,10 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/YOUR_USERNAME"><img alt="Support me on Ko-fi" src="https://img.shields.io/badge/Support%20me%20on%20Ko--fi-0057B8?style=for-the-badge"></a>
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" alt="Opening the eye tab, turning packs off and applying">
 </p>
 

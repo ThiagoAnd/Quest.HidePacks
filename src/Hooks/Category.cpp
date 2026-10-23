@@ -12,9 +12,11 @@
 #include "GlobalNamespace/SelectLevelCategoryViewController.hpp"
 #include "Icon.hpp"
 #include "UnityEngine/GameObject.hpp"
-#include "UnityEngine/Resources.hpp"
+#include "UnityEngine/FilterMode.hpp"
 #include "UnityEngine/Sprite.hpp"
 #include "UnityEngine/Texture2D.hpp"
+#include "UnityEngine/TextureFormat.hpp"
+#include "UnityEngine/TextureWrapMode.hpp"
 #include "Panel.hpp"
 #include "bsml/shared/BSML-Lite.hpp"
 
@@ -62,7 +64,18 @@ namespace {
     UnityEngine::Sprite* LoadIcon() {
         ArrayW<uint8_t> bytes(Icons::Eye.size());
         std::memcpy(bytes.begin(), Icons::Eye.data(), Icons::Eye.size());
-        return BSML::Lite::ArrayToSprite(bytes);
+        auto plain = BSML::Lite::ArrayToSprite(bytes);
+        if (!plain || !plain->texture) {
+            return plain;
+        }
+        auto source = plain->texture;
+        auto texture = UnityEngine::Texture2D::New_ctor(source->width, source->height, UnityEngine::TextureFormat::RGBA32, true, false);
+        texture->SetPixels32(source->GetPixels32());
+        texture->Apply(true, false);
+        texture->filterMode = UnityEngine::FilterMode::Trilinear;
+        texture->wrapMode = UnityEngine::TextureWrapMode::Clamp;
+        auto sprite = BSML::Lite::TextureToSprite(texture);
+        return sprite ? sprite : plain;
     }
 
     void Describe(UnityEngine::Sprite* sprite, std::string const& label) {
@@ -78,40 +91,11 @@ namespace {
         Logger.info("ICON {} sprite {} texture {}x{} mips {} filter {} aniso {} ppu {} rect {}x{}", label, Text(sprite->name), texture->width, texture->height, texture->mipmapCount, static_cast<int>(texture->filterMode), texture->anisoLevel, sprite->pixelsPerUnit, sprite->rect.width, sprite->rect.height);
     }
 
-    void Survey(ArrayW<Info*> infos) {
-        static bool done = false;
-        if (done) {
-            return;
-        }
-        done = true;
-        try {
-            for (auto info : infos) {
-                if (info) {
-                    Describe(info->categoryIcon, "category " + std::to_string(info->levelCategory.value__));
-                }
-            }
-            for (auto sprite : UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Sprite*>()) {
-                if (!sprite) {
-                    continue;
-                }
-                std::string name = Text(sprite->name);
-                std::string lower = name;
-                std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
-                if (lower.find("eye") != std::string::npos || lower.find("hide") != std::string::npos || lower.find("hidden") != std::string::npos || lower.find("visib") != std::string::npos || lower.find("unseen") != std::string::npos) {
-                    Logger.info("ICON candidate {}", name);
-                }
-            }
-        } catch (std::exception const& e) {
-            ReportError("icon survey", e);
-        }
-    }
-
     void AddInfo(SelectLevelCategoryViewController* self) {
         auto infos = self->_allLevelCategoryInfos;
         if (!infos) {
             return;
         }
-        Survey(infos);
         if (ours.empty()) {
             int first = FindFreeValue(infos);
             for (int i = 0; i < Wanted; i++) {

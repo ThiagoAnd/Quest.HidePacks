@@ -26,7 +26,7 @@ The file can also be edited by hand. Pack ids for 1.40.8 are `OstVol1` to `OstVo
 
 ## Compatibility
 
-The tab bar shows four tabs per page with Back and Next, so it works with or without RecentlyPlayed.
+The tab and the paging of the tab bar come from CategoryTabs, which has to be installed too. Without it the mod still runs but the eye tab does not appear, and the log says so.
 
 ## License
 

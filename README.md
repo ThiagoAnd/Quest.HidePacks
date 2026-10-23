@@ -30,4 +30,6 @@ The tab bar shows four tabs per page with Back and Next, so it works with or wit
 
 ## License
 
+Copyright (C) 2026 ThiagoAnd
+
 GPL-3.0, see the LICENSE file.

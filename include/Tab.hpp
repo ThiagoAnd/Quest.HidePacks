@@ -2,4 +2,5 @@
 
 namespace Tab {
     void Register();
+    bool Registered();
 }

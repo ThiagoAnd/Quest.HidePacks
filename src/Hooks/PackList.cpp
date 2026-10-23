@@ -7,6 +7,7 @@
 #include "Config.hpp"
 #include "GlobalNamespace/BeatmapLevelPack.hpp"
 #include "GlobalNamespace/LevelFilteringNavigationController.hpp"
+#include "Tab.hpp"
 #include "System/Collections/Generic/IReadOnlyCollection_1.hpp"
 #include "System/Collections/Generic/IReadOnlyList_1.hpp"
 #include "System/Collections/Generic/List_1.hpp"
@@ -60,7 +61,7 @@ MAKE_LATE_HOOK_MATCH(
     PackList* beatmapLevelPacks
 ) {
     auto packs = beatmapLevelPacks;
-    if (packs) {
+    if (packs && Tab::Registered()) {
         try {
             packs = Filter(beatmapLevelPacks);
         } catch (std::exception const& e) {

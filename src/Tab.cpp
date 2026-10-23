@@ -6,6 +6,14 @@
 #include "Panel.hpp"
 #include "logger.hpp"
 
+namespace {
+    bool registered = false;
+}
+
+bool Tab::Registered() {
+    return registered;
+}
+
 void Tab::Register() {
     CategoryTabsTab tab{
         "HidePacks",
@@ -15,7 +23,8 @@ void Tab::Register() {
         [](void* navigation) { Panel::Show(static_cast<GlobalNamespace::LevelFilteringNavigationController*>(navigation)); },
         [] { Panel::SetListVisible(true); },
     };
-    if (!CategoryTabsApi::Register(tab)) {
-        Logger.error("CategoryTabs is not installed or is too old, the Hide Packs tab will not appear");
+    registered = CategoryTabsApi::Register(tab);
+    if (!registered) {
+        Logger.error("CategoryTabs is not installed or is too old, the Hide Packs tab will not appear and no pack will be hidden");
     }
 }

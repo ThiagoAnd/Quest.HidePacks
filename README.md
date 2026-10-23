@@ -26,7 +26,7 @@ The file can also be edited by hand. Pack ids for 1.40.8 are `OstVol1` to `OstVo
 
 ## Compatibility
 
-The tab and the paging of the tab bar come from CategoryTabs, which has to be installed too. Without it the mod still runs but the eye tab does not appear, and the log says so.
+The tab and the paging of the tab bar come from CategoryTabs, which has to be installed too. Without it the eye tab does not appear and no pack is hidden, so nothing stays hidden with no way to undo it. The log says so.
 
 ## License
 

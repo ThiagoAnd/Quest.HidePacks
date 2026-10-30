@@ -2,6 +2,15 @@
 
 All notable changes to this mod are listed here. The format follows Keep a Changelog.
 
+## [0.1.1] - 2026-10-30
+
+### Added
+- Cover image shown in the mod list.
+
+### Changed
+- Author name is now S4lezardv.
+- Installs CategoryTabs 0.1.1 when it is missing.
+
 ## [0.1.0] - 2026-10-23
 
 ### Added

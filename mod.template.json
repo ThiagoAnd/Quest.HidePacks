@@ -13,7 +13,7 @@
     {
       "id": "CategoryTabs",
       "version": "^0.1.0",
-      "downloadIfMissing": "https://github.com/ThiagoAnd/Quest.CategoryTabs/releases/download/v0.1.0/CategoryTabs.qmod"
+      "downloadIfMissing": "https://github.com/ThiagoAnd/Quest.CategoryTabs/releases/download/v0.1.1/CategoryTabs.qmod"
     }
   ],
   "lateModFiles": [

@@ -6,8 +6,8 @@
   "info": {
     "name": "HidePacks",
     "id": "HidePacks",
-    "version": "0.1.0",
-    "url": null,
+    "version": "0.1.1",
+    "url": "https://github.com/ThiagoAnd/Quest.HidePacks",
     "additionalData": {
       "overrideSoName": "libHidePacks.so",
       "cmake": true

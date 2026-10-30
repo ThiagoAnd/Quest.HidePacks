@@ -67,7 +67,9 @@
       "./build",
       "./extern/libs"
     ],
-    "qmodIncludeFiles": [],
+    "qmodIncludeFiles": [
+      "./cover.png"
+    ],
     "qmodOutput": "./HidePacks.qmod"
   },
   "dependencies": [

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.png" alt="Mod banner">
+</p>
+
 <h1 align="center">HidePacks</h1>
 
 <p align="center">

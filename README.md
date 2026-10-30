@@ -16,6 +16,10 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/s4lezardv"><img alt="Support me on Ko-fi" src="https://img.shields.io/badge/Support%20me%20on%20Ko--fi-0057B8?style=for-the-badge"></a>
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" alt="Opening the eye tab, turning packs off and applying">
 </p>
 
@@ -70,9 +74,13 @@ The eye tab does not appear and no pack is hidden, so nothing stays hidden with 
 Send `/sdcard/ModData/com.beatgames.beatsaber/logs2/HidePacks.log`.
 Errors start with `HIDEPACKS ERROR`.
 
+## Support
+
+If this mod made your game better and you would like to see more from me, you can support my work on [Ko-fi](https://ko-fi.com/s4lezardv). Thank you!
+
 ## Credits
 
-Made by **ThiagoAnd**
+Made by **S4lezardv**
 Tabs and paging by [CategoryTabs](https://github.com/ThiagoAnd/Quest.CategoryTabs)
 
 ## License
